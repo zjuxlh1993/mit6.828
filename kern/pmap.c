@@ -174,8 +174,10 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
-	
-	kern_pgdir[PDX(UPAGES)] = PADDR(pages) | PTE_P | PTE_U;
+
+	n = ROUNDUP(npages*sizeof(struct PageInfo), PGSIZE);
+	for (uint32_t i = 0; i < n; i += PGSIZE)
+		kern_pgdir[PDX(UPAGES + i)] = (PADDR(pages) + i) | PTE_P | PTE_U;
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -189,8 +191,9 @@ mem_init(void)
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
 	
-	for (
-	kern_pgdir[PDX(KSTACKTOP-KSTKSIZE)] = PADDR(bootstack) | PTE_P | PTE_W;
+	for (uint32_t i = 0; i < KSTKSIZE; i += PGSIZE){
+		kern_pgdir[KSTACKTOP - KSTKSIZE + i] = (PADDR(bootstack) +i) | PTE_P | PTE_W;
+	}
 	
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -200,6 +203,10 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
+
+	for (uint64_t i = KERNBASE; i< 0xffffffff;i += PGSIZE){
+		kern_pgdir[i] = PADDR(i) | PTE_U | PTE_W;
+	}
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
