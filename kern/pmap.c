@@ -102,8 +102,9 @@ boot_alloc(uint32_t n)
 	// to a multiple of PGSIZE.
 	//
 	// LAB 2: Your code here.
-
-	return NULL;
+	void * ret = (void *)nextfree;
+	nextfree = ROUNDUP((char *) nextfree+n, PGSIZE);	
+	return ret;
 }
 
 // Set up a two-level page table:
@@ -148,8 +149,9 @@ mem_init(void)
 	// array.  'npages' is the number of physical pages in memory.  Use memset
 	// to initialize all fields of each struct PageInfo to 0.
 	// Your code goes here:
-
-
+	int nbytes = npages*sizeof(struct PageInfo);
+        pages = boot_alloc(nbytes);
+        memset(pages, 0, nbytes);
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
 	// up the list of free physical pages. Once we've done so, all further
@@ -172,6 +174,8 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
+	
+	kern_pgdir[PDX(UPAGES)] = PADDR(pages) | PTE_P | PTE_U;
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -184,7 +188,10 @@ mem_init(void)
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
-
+	
+	for (
+	kern_pgdir[PDX(KSTACKTOP-KSTKSIZE)] = PADDR(bootstack) | PTE_P | PTE_W;
+	
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
 	// Ie.  the VA range [KERNBASE, 2^32) should map to
