@@ -122,11 +122,13 @@ mem_init(void)
 	uint32_t cr0;
 	size_t n;
 
+        cprintf("test point 1\n");
+
 	// Find out how much memory the machine has (npages & npages_basemem).
 	i386_detect_memory();
 
 	// Remove this line when you're ready to test this function.
-	panic("mem_init: This function is not finished\n");
+	// panic("mem_init: This function is not finished\n");
 
 	//////////////////////////////////////////////////////////////////////
 	// create initial page directory.
@@ -159,11 +161,14 @@ mem_init(void)
 	// particular, we can now map memory using boot_map_region
 	// or page_insert
 	page_init();
-
+	
+        cprintf("test point 2\n");
 	check_page_free_list(1);
 	check_page_alloc();
 	check_page();
-
+        
+        cprintf("test point 3\n");
+        
 	//////////////////////////////////////////////////////////////////////
 	// Now we set up virtual memory
 
@@ -192,7 +197,7 @@ mem_init(void)
 	// Your code goes here:
 	
 	for (uint32_t i = 0; i < KSTKSIZE; i += PGSIZE){
-		kern_pgdir[KSTACKTOP - KSTKSIZE + i] = (PADDR(bootstack) +i) | PTE_P | PTE_W;
+		kern_pgdir[PDX(KSTACKTOP - KSTKSIZE + i)] = (PADDR(bootstack) +i) | PTE_P | PTE_W;
 	}
 	
 	//////////////////////////////////////////////////////////////////////
@@ -205,7 +210,7 @@ mem_init(void)
 	// Your code goes here:
 
 	for (uint64_t i = KERNBASE; i< 0xffffffff;i += PGSIZE){
-		kern_pgdir[i] = PADDR(i) | PTE_U | PTE_W;
+		kern_pgdir[PDX(i)] = (i - KERNBASE) | PTE_U | PTE_W;
 	}
 
 	// Check that the initial page directory has been set up correctly.
@@ -239,6 +244,17 @@ mem_init(void)
 // Pages are reference counted, and free pages are kept on a linked list.
 // --------------------------------------------------------------
 
+bool 
+check_page_invalid(uint32_t order)
+{
+        //bios || IDT structs
+        if (order == 0) return true;
+        //io hole
+        if (order >= PGNUM(IOPHYSMEM) && order < PGNUM(EXTPHYSMEM)) return true;
+        return false;
+}
+
+
 //
 // Initialize page structure and memory free list.
 // After this is done, NEVER use boot_alloc again.  ONLY use the page
@@ -267,9 +283,11 @@ page_init(void)
 	// free pages!
 	size_t i;
 	for (i = 0; i < npages; i++) {
-		pages[i].pp_ref = 0;
-		pages[i].pp_link = page_free_list;
-		page_free_list = &pages[i];
+	        if (!check_page_invalid(i)){
+		        pages[i].pp_ref = 0;
+		        pages[i].pp_link = page_free_list;
+		        page_free_list = &pages[i];
+		}
 	}
 }
 
