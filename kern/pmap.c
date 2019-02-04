@@ -107,7 +107,10 @@ boot_alloc(uint32_t n)
 	        nextfree;
 	        
 	void * ret = (void *)nextfree;
-	nextfree = ROUNDUP((char *) nextfree+n, PGSIZE);	
+	nextfree = ROUNDUP((char *) nextfree+n, PGSIZE);
+	//if 
+	if ((uint32_t)ret<KERNBASE || (uint32_t)nextfree < KERNBASE)
+	        panic("boot_alloc: out of memory");	
 	return ret;
 }
 
@@ -248,17 +251,6 @@ mem_init(void)
 // Pages are reference counted, and free pages are kept on a linked list.
 // --------------------------------------------------------------
 
-bool 
-check_page_invalid(uint32_t order)
-{
-        //bios || IDT structs
-        if (order == 0) return true;
-        //io hole
-        if (order >= PGNUM(IOPHYSMEM) && order < PGNUM(EXTPHYSMEM)) return true;
-        return false;
-}
-
-
 //
 // Initialize page structure and memory free list.
 // After this is done, NEVER use boot_alloc again.  ONLY use the page
@@ -286,12 +278,18 @@ page_init(void)
 	// NB: DO NOT actually touch the physical memory corresponding to
 	// free pages!
 	size_t i;
-	for (i = 0; i < npages; i++) {
-	        if (!check_page_invalid(i)){
-		        pages[i].pp_ref = 0;
-		        pages[i].pp_link = page_free_list;
-		        page_free_list = &pages[i];
-		}
+	for (i = 1; i < npages_basemem; i++) {
+                pages[i].pp_ref = 0;
+		pages[i].pp_link = page_free_list;
+		page_free_list = &pages[i];
+	}
+	
+	char* first_free_page = (char *) boot_alloc(0);
+	
+	for (i = PGNUM(PADDR(first_free_page)); i<npages; i++){
+                pages[i].pp_ref = 0;
+		pages[i].pp_link = page_free_list;
+		page_free_list = &pages[i];	        
 	}
 }
 
@@ -499,13 +497,14 @@ check_page_free_list(bool only_low_memory)
 		*tp[0] = pp2;
 		page_free_list = pp1;
 	}
-        cprintf("check point in function check_page_free_list 1\n");
+        //cprintf("check point in function check_page_free_list 1\n");
 	// if there's a page that shouldn't be on the free list,
 	// try to make sure it eventually causes trouble.
 	for (pp = page_free_list; pp; pp = pp->pp_link)
-		if (PDX(page2pa(pp)) < pdx_limit)
+		if (PDX(page2pa(pp)) < pdx_limit){
 			memset(page2kva(pp), 0x97, 128);
-        cprintf("check point in function check_page_free_list 2\n");
+		}
+        //cprintf("check point in function check_page_free_list 2\n");
 	first_free_page = (char *) boot_alloc(0);
 	for (pp = page_free_list; pp; pp = pp->pp_link) {
 		// check that we didn't corrupt the free list itself
