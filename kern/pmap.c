@@ -102,6 +102,10 @@ boot_alloc(uint32_t n)
 	// to a multiple of PGSIZE.
 	//
 	// LAB 2: Your code here.
+	
+	if (n==0) return 
+	        nextfree;
+	        
 	void * ret = (void *)nextfree;
 	nextfree = ROUNDUP((char *) nextfree+n, PGSIZE);	
 	return ret;
@@ -495,13 +499,13 @@ check_page_free_list(bool only_low_memory)
 		*tp[0] = pp2;
 		page_free_list = pp1;
 	}
-
+        cprintf("check point in function check_page_free_list 1\n");
 	// if there's a page that shouldn't be on the free list,
 	// try to make sure it eventually causes trouble.
 	for (pp = page_free_list; pp; pp = pp->pp_link)
 		if (PDX(page2pa(pp)) < pdx_limit)
 			memset(page2kva(pp), 0x97, 128);
-
+        cprintf("check point in function check_page_free_list 2\n");
 	first_free_page = (char *) boot_alloc(0);
 	for (pp = page_free_list; pp; pp = pp->pp_link) {
 		// check that we didn't corrupt the free list itself
