@@ -309,7 +309,16 @@ struct PageInfo *
 page_alloc(int alloc_flags)
 {
 	// Fill this function in
-	return 0;
+	if (page_free_list){
+		struct PageInfo* ret = page_free_list;
+		page_free_list = page_free_list->pp_link;
+		if (alloc_flags & ALLOC_ZERO) {
+			memset(ret, 0 ,PGSIZE);
+		}
+		ret->pp_link = NULL;
+		return ret;
+	} 
+	return NULL;
 }
 
 //
@@ -319,6 +328,13 @@ page_alloc(int alloc_flags)
 void
 page_free(struct PageInfo *pp)
 {
+	if (pp->pp_link)
+		panic("the page %d is double-free!", (pp-pages));
+	if (pp->pp_ref)
+		panic("this page %d still have referent", (pp-pages));
+	
+	pp->pp_link = page_free_list;
+	page_free_list = pp;
 	// Fill this function in
 	// Hint: You may want to panic if pp->pp_ref is nonzero or
 	// pp->pp_link is not NULL.
