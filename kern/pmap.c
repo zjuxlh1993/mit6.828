@@ -129,7 +129,7 @@ mem_init(void)
 	uint32_t cr0;
 	size_t n;
 
-        cprintf("test point 1\n");
+        //cprintf("test point 1\n");
 
 	// Find out how much memory the machine has (npages & npages_basemem).
 	i386_detect_memory();
@@ -169,7 +169,7 @@ mem_init(void)
 	// or page_insert
 	page_init();
 	
-        cprintf("test point 2\n");
+        //cprintf("test point 2\n");
 	check_page_free_list(1);
 	check_page_alloc();
 	check_page();
