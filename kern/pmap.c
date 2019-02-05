@@ -373,10 +373,30 @@ page_decref(struct PageInfo* pp)
 // Hint 3: look at inc/mmu.h for useful macros that manipulate page
 // table and page directory entries.
 //
+pte_t*
+pgtb_walk(pte_t *pgtb, const void *va)
+{
+        return pgtb + PTX(va);
+}
+
 pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
-	// Fill this function in
+        if (pgdir){
+                if (pgdir[PDX(va)]==0 || !pgdir[PDX(va)] & PTE_P){
+                        if (create){
+                                struct PageInfo * new_page_table = page_alloc(ALLOC_ZERO);
+                                if (!new_page_table)
+                                        return NULL;
+                                ++(new_page_table->pp_ref);
+                                pgdir[PDX(va)] = page2pa(new_page_table);
+                                return pgtb_walk(KADDR(pgdir[PDX(va)]), va);
+                        } else
+                                return NULL;
+                } else{
+                       return pgtb_walk(KADDR(pgdir[PDX(va)]), va);
+                }
+        }
 	return NULL;
 }
 
