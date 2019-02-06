@@ -174,7 +174,7 @@ mem_init(void)
 	check_page_alloc();
 	check_page();
         
-        cprintf("test point 3\n");
+        ////cprintf("test point 3\n");
         
 	//////////////////////////////////////////////////////////////////////
 	// Now we set up virtual memory
@@ -374,9 +374,10 @@ page_decref(struct PageInfo* pp)
 // table and page directory entries.
 //
 pte_t*
-pgtb_walk(pte_t *pgtb, const void *va)
+pgtb_walk(pde_t *pgtb, const void *va)
 {
-        return pgtb + PTX(va);
+        //cprintf("pgtb_walk: %x %x %x\n", &(pgtb[PTX(va)]), PTX(va), va);
+        return &(pgtb[PTX(va)]);
 }
 
 pte_t *
@@ -389,8 +390,9 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
                                 if (!new_page_table)
                                         return NULL;
                                 ++(new_page_table->pp_ref);
-                                pgdir[PDX(va)] = page2pa(new_page_table);
-                                return pgtb_walk(KADDR(pgdir[PDX(va)]), va);
+                                pgdir[PDX(va)] = page2pa(new_page_table) | PTE_P;
+                                //cprintf("%x\n", page2pa(new_page_table) | PTE_P);
+                                return pgtb_walk(KADDR(PTE_ADDR(pgdir[PDX(va)])), va);
                         } else
                                 return NULL;
                 } else{
@@ -457,6 +459,7 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
         if (*ins_pte & PTE_P){
                 page_remove(pgdir, va);
         }
+        //cprintf("page_insert: %x %x\n",ins_pte, page2pa(pp) | PTE_P | perm);
         *ins_pte = page2pa(pp) | PTE_P | perm;
 	return 0;
 }
@@ -733,9 +736,11 @@ check_va2pa(pde_t *pgdir, uintptr_t va)
 	pte_t *p;
 
 	pgdir = &pgdir[PDX(va)];
+	cprintf("%x\n",*pgdir); 
 	if (!(*pgdir & PTE_P))
 		return ~0;
 	p = (pte_t*) KADDR(PTE_ADDR(*pgdir));
+	cprintf("%x\n",p[PTX(va)]);
 	if (!(p[PTX(va)] & PTE_P))
 		return ~0;
 	return PTE_ADDR(p[PTX(va)]);
@@ -780,6 +785,7 @@ check_page(void)
 	page_free(pp0);
 	assert(page_insert(kern_pgdir, pp1, 0x0, PTE_W) == 0);
 	assert(PTE_ADDR(kern_pgdir[0]) == page2pa(pp0));
+	cprintf("%x %x\n", check_va2pa(kern_pgdir, 0x0), page2pa(pp1));
 	assert(check_va2pa(kern_pgdir, 0x0) == page2pa(pp1));
 	assert(pp1->pp_ref == 1);
 	assert(pp0->pp_ref == 1);
