@@ -459,7 +459,7 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
         if (*ins_pte & PTE_P){
                 page_remove(pgdir, va);
         }
-        //cprintf("page_insert: %x %x\n",ins_pte, page2pa(pp) | PTE_P | perm);
+        cprintf("page_insert: %x %x\n",ins_pte, page2pa(pp) | PTE_P | perm);
         *ins_pte = page2pa(pp) | PTE_P | perm;
 	return 0;
 }
