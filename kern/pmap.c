@@ -517,7 +517,7 @@ page_remove(pde_t *pgdir, void *va)
 //
 // Invalidate a TLB entry, but only if the page tables being
 // edited are the ones currently in use by the processor.
-// test
+// 
 void
 tlb_invalidate(pde_t *pgdir, void *va)
 {
