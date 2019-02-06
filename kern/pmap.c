@@ -188,8 +188,9 @@ mem_init(void)
 	// Your code goes here:
 
 	n = ROUNDUP(npages*sizeof(struct PageInfo), PGSIZE);
-	for (uint32_t i = 0; i < n; i += PGSIZE)
-		kern_pgdir[PDX(UPAGES + i)] = (PADDR(pages) + i) | PTE_P | PTE_U;
+	for (uint32_t i = 0; i < n; i += PGSIZE) {
+		page_insert(kern_pgdir, pa2page(PADDR(pages) + i), (void*)(UPAGES + i), PTE_P | PTE_U);
+	}
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -204,7 +205,7 @@ mem_init(void)
 	// Your code goes here:
 	
 	for (uint32_t i = 0; i < KSTKSIZE; i += PGSIZE){
-		kern_pgdir[PDX(KSTACKTOP - KSTKSIZE + i)] = (PADDR(bootstack) +i) | PTE_P | PTE_W;
+		page_insert(kern_pgdir, pa2page(PADDR(bootstack) +i), (void*)(KSTACKTOP - KSTKSIZE + i), PTE_P | PTE_W);
 	}
 	
 	//////////////////////////////////////////////////////////////////////
@@ -215,10 +216,9 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
-
-	for (uint64_t i = KERNBASE; i< 0xffffffff;i += PGSIZE){
-		kern_pgdir[PDX(i)] = (i - KERNBASE) | PTE_U | PTE_W;
-	}
+	
+	uint32_t size = ~0 - KERNBASE + 1;
+	boot_map_region(kern_pgdir, KERNBASE, size, 0, PTE_P | PTE_W);
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
@@ -419,6 +419,7 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
         for (uint32_t i = 0; i<size; i+=PGSIZE){
                 pte_t* map_pte = pgdir_walk(pgdir, (void*)(va + i), true);
                 *map_pte = (pa + i) | PTE_P | perm;
+                pgdir[PDX(va + i)] |= perm;
         }
 }
 
@@ -692,12 +693,14 @@ check_kern_pgdir(void)
 
 	// check pages array
 	n = ROUNDUP(npages*sizeof(struct PageInfo), PGSIZE);
-	for (i = 0; i < n; i += PGSIZE)
+	for (i = 0; i < n; i += PGSIZE){
+	        //cprintf("%x %x\n", check_va2pa(pgdir, UPAGES + i), PADDR(pages) + i);
 		assert(check_va2pa(pgdir, UPAGES + i) == PADDR(pages) + i);
-
+        }
 
 	// check phys mem
 	for (i = 0; i < npages * PGSIZE; i += PGSIZE)
+		//cprintf("%x %x\n", check_va2pa(pgdir, i), PADDR(pages) + i);
 		assert(check_va2pa(pgdir, KERNBASE + i) == i);
 
 	// check kernel stack
