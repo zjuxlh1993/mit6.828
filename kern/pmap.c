@@ -204,9 +204,7 @@ mem_init(void)
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
 	
-	for (uint32_t i = 0; i < KSTKSIZE; i += PGSIZE){
-		page_insert(kern_pgdir, pa2page(PADDR(bootstack) +i), (void*)(KSTACKTOP - KSTKSIZE + i), PTE_P | PTE_W);
-	}
+	boot_map_region(kern_pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_P | PTE_W);
 	
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
