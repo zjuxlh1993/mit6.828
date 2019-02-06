@@ -10,7 +10,8 @@
 #include <kern/kclock.h>
 
 // These variables are set by i386_detect_memory()
-size_t npages;			// Amount of physical memory (in pages)
+size_t npages;			// Amount of kernel physical memory (in pages)
+size_t total_pages;		// total physical memory (in pages)
 static size_t npages_basemem;	// Amount of base memory (in pages)
 
 // These variables are set in mem_init()
@@ -54,6 +55,9 @@ i386_detect_memory(void)
 
 	cprintf("Physical memory: %uK available, base = %uK, extended = %uK\n",
 		totalmem, basemem, totalmem - basemem);
+	total_pages = npages;
+	npages = (npages > PGNUM(~0 - KERNBASE + 1))? PGNUM(~0 - KERNBASE + 1) : npages;
+	
 }
 
 
@@ -283,6 +287,7 @@ page_init(void)
 	}
 	
 	char* first_free_page = (char *) boot_alloc(0);
+	//cprintf("%u %u\n", PGNUM(PADDR(first_free_page)), npages);
 	
 	for (i = PGNUM(PADDR(first_free_page)); i<npages; i++){
                 pages[i].pp_ref = 0;
