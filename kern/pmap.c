@@ -118,6 +118,17 @@ boot_alloc(uint32_t n)
 	return ret;
 }
 
+void
+set_pmap_flag()
+{
+	uint32_t eax, ecx, ebx, edx;
+	cpuid(0, &eax, &ebx, &ecx, &edx);
+	if (edx & 0x8)
+		cpritnf("this cpu support 4m pages");
+	else 
+		cprintf("this cpu didn't support 4m pages");
+}
+
 // Set up a two-level page table:
 //    kern_pgdir is its linear (virtual) address of the root
 //
@@ -137,6 +148,10 @@ mem_init(void)
 
 	// Find out how much memory the machine has (npages & npages_basemem).
 	i386_detect_memory();
+
+	// use cpuid instruction to know the pmap information of cpu to set flag
+	set_pmap_flag();
+
 
 	// Remove this line when you're ready to test this function.
 	// panic("mem_init: This function is not finished\n");
