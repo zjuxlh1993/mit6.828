@@ -150,6 +150,7 @@ mem_init(void)
 	uint32_t cr0;
 	uint32_t cr4;
 	size_t n;
+	uint32_t nbytes;
 	
 	cr4 = rcr4();
 	cr4 |= CR4_PSE;
@@ -193,12 +194,16 @@ mem_init(void)
 	// array.  'npages' is the number of physical pages in memory.  Use memset
 	// to initialize all fields of each struct PageInfo to 0.
 	// Your code goes here:
-	int nbytes = npages*sizeof(struct PageInfo);
+	nbytes = npages*sizeof(struct PageInfo);
         pages = boot_alloc(nbytes);
         memset(pages, 0, nbytes);
 	//////////////////////////////////////////////////////////////////////
 	// Make 'envs' point to an array of size 'NENV' of 'struct Env'.
 	// LAB 3: Your code here.
+	
+	nbytes = NENV*sizeof(struct Env);
+        envs = boot_alloc(nbytes);
+        memset(envs, 0, nbytes);
 
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
@@ -238,6 +243,10 @@ mem_init(void)
 	//    - the new image at UENVS  -- kernel R, user R
 	//    - envs itself -- kernel RW, user NONE
 	// LAB 3: Your code here.
+	n = ROUNDUP(NENV*sizeof(struct Env), PGSIZE);
+	for (uint32_t i = 0; i < n; i += PGSIZE) {
+		page_insert(kern_pgdir, pa2page(PADDR(envs) + i), (void*)(UENVS + i), PTE_P | PTE_U);
+	}
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
