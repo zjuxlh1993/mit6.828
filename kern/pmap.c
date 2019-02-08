@@ -122,11 +122,16 @@ void
 set_pmap_flag()
 {
 	uint32_t eax, ecx, ebx, edx;
-	cpuid(0, &eax, &ebx, &ecx, &edx);
-	if (edx & 0x8)
-		cpritnf("this cpu support 4m pages");
-	else 
-		cprintf("this cpu didn't support 4m pages");
+	cpuid(1, &eax, &ebx, &ecx, &edx);
+	cprintf("eax:%x ebx:%x ecx:%x edx:%x\n",eax, ebx, ecx, edx);
+	if ((edx & 0x8) == 0x8){
+		cprintf("this cpu support 4m pages.\n");
+		support_4mpage_flag = true;
+	}
+	else {
+		cprintf("this cpu didn't support 4m pages.\n");
+		support_4mpage_flag = false;
+	}
 }
 
 // Set up a two-level page table:
@@ -142,7 +147,12 @@ void
 mem_init(void)
 {
 	uint32_t cr0;
+	uint32_t cr4;
 	size_t n;
+	
+	cr4 = rcr4();
+	cr4 |= CR4_PSE;
+	lcr4(cr4);	
 
         //cprintf("test point 1\n");
 
@@ -160,7 +170,12 @@ mem_init(void)
 	// create initial page directory.
 	kern_pgdir = (pde_t *) boot_alloc(PGSIZE);
 	memset(kern_pgdir, 0, PGSIZE);
-
+	/* 
+	//test 4m page
+	kern_pgdir[0] = 0 | PTE_PS | PTE_P | PTE_W;
+	kern_pgdir[KERNBASE >> PDXSHIFT] = 0 | PTE_PS | PTE_P | PTE_W;
+	lcr3(PADDR(kern_pgdir));
+	*/
 	//////////////////////////////////////////////////////////////////////
 	// Recursively insert PD in itself as a page table, to form
 	// a virtual page table at virtual address UVPT.
@@ -248,7 +263,6 @@ mem_init(void)
 	// If the machine reboots at this point, you've probably set up your
 	// kern_pgdir wrong.
 	lcr3(PADDR(kern_pgdir));
-
 	check_page_free_list(0);
 
 	// entry.S set the really important flags in cr0 (including enabling
@@ -257,6 +271,8 @@ mem_init(void)
 	cr0 |= CR0_PE|CR0_PG|CR0_AM|CR0_WP|CR0_NE|CR0_MP;
 	cr0 &= ~(CR0_TS|CR0_EM);
 	lcr0(cr0);
+	
+
 
 	// Some more checks, only possible after kern_pgdir is installed.
 	check_page_installed_pgdir();
@@ -435,6 +451,16 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
         if (va % PGSIZE != 0 || size % PGSIZE !=0 || pa % PGSIZE != 0)
                 panic("va or pa or size is not PGSIZEs");
         for (uint32_t i = 0; i<size; i+=PGSIZE){
+        	//cprintf("boot_map_region i: %x\n", i);
+        	if ((pa + i) % PTSIZE==0){
+        		//cprintf("boot_map_region i: %x\n", va + i);
+        		if (!(pgdir[PDX(va + i)] & PTE_P)){
+        			//cprintf("boot_map_region: %x\n", (pa + i) | PTE_PS | PTE_P | perm);
+        			pgdir[PDX(va + i)] =(pa + i) | PTE_PS | PTE_P | perm; 
+        			i += (PTSIZE - PGSIZE);
+        			continue;
+        		}
+        	}
                 pte_t* map_pte = pgdir_walk(pgdir, (void*)(va + i), true);
                 *map_pte = (pa + i) | PTE_P | perm;
                 pgdir[PDX(va + i)] |= perm;
@@ -718,7 +744,7 @@ check_kern_pgdir(void)
 
 	// check phys mem
 	for (i = 0; i < npages * PGSIZE; i += PGSIZE)
-		//cprintf("%x %x\n", check_va2pa(pgdir, i), PADDR(pages) + i);
+		//if (i % PTSIZE == 0 || i > 0x7c00000)cprintf("%x %x %x\n", check_va2pa(pgdir, KERNBASE + i), i, KERNBASE + i);
 		assert(check_va2pa(pgdir, KERNBASE + i) == i);
 
 	// check kernel stack
@@ -758,12 +784,18 @@ check_va2pa(pde_t *pgdir, uintptr_t va)
 
 	pgdir = &pgdir[PDX(va)];
 	//cprintf("%x\n",*pgdir); 
-	if (!(*pgdir & PTE_P))
+	if (!(*pgdir & PTE_P)){
+		//panic("");
 		return ~0;
+	}
+	if (*pgdir & PTE_PS)
+		return (*pgdir & (~0x3fffff)) + PDOFF(va);
 	p = (pte_t*) KADDR(PTE_ADDR(*pgdir));
 	//cprintf("%x\n",p[PTX(va)]);
-	if (!(p[PTX(va)] & PTE_P))
+	if (!(p[PTX(va)] & PTE_P)){
+		//panic("%x",*pgdir);
 		return ~0;
+	}
 	return PTE_ADDR(p[PTX(va)]);
 }
 
