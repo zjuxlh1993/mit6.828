@@ -281,16 +281,16 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   (Watch out for corner-cases!)
 	uint32_t va_end = (uint32_t)va + len;
 
-	uint32_t real_start = ROUNDDOWN(va, PGSIZE);
+	uint32_t real_start = ROUNDDOWN((uint32_t)va, PGSIZE);
 	uint32_t real_end = ROUNDDOWN(va_end, PGSIZE);
-	if (va_end<va) 
+	if (va_end<(uint32_t)va) 
 		panic("memory out of range!\n");
 	
 	struct PageInfo *p = NULL;
 	for (uint32_t i = 0; i<= real_end-real_start; i+=PGSIZE){
 		if (!(p = page_alloc(0)))
 			panic("not enough memory!\n");
-		pte_t* tmp = pgdir_walk(e->env_pgdir, real_start + i, true);
+		pte_t* tmp = pgdir_walk(e->env_pgdir, (void*)(real_start + i), true);
 		*tmp = page2pa(p) | PTE_P | PTE_U | PTE_W;
 		++p->pp_ref;
 	}
@@ -364,16 +364,16 @@ load_icode(struct Env *e, uint8_t *binary)
 	eph = ph + env_elf->e_phnum;
 	for (; ph < eph; ph++){
 		if (ph->p_type == ELF_PROG_LOAD){
-			region_alloc(e, ph->p_va, ph->p_memsz);
-			memcpy(ph->p_va, binary+ph->p_offset, ph->p_filesz);
-			memset(ph->p_va + ph->p_filesz, 0, ph->p_memsz - ph->p_filesz);
+			region_alloc(e, (void *)ph->p_va, ph->p_memsz);
+			memcpy((char*)ph->p_va, binary+ph->p_offset, ph->p_filesz);
+			memset((char*)ph->p_va + ph->p_filesz, 0, ph->p_memsz - ph->p_filesz);
 		}
 	}
 	lcr3(PADDR(kern_pgdir));
 	/* do nothing */;
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
-	region_alloc(e, USTACKTOP - PGSIZE, PGSHIFT);
+	region_alloc(e, (void*)(USTACKTOP - PGSIZE), PGSHIFT);
 
 	env_run(e);
 
@@ -517,7 +517,7 @@ env_run(struct Env *e)
 	curenv = e;
 	curenv->env_status = ENV_RUNNING;
 	++curenv->env_runs;
-	lcr3(curenv->env_pgdir);
+	lcr3(PADDR(curenv->env_pgdir));
 	env_pop_tf(&curenv->env_tf);
 
 	panic("env_run not yet implemented");
