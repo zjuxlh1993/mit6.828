@@ -279,6 +279,22 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   'va' and 'len' values that are not page-aligned.
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
+	uint32_t va_end = (uint32_t)va + len;
+
+	uint32_t real_start = ROUNDDOWN(va, PGSIZE);
+	uint32_t real_end = ROUNDDOWN(va_end, PGSIZE);
+	if (va_end<va) 
+		panic("memory out of range!\n");
+	
+	struct PageInfo *p = NULL;
+	for (uint32_t i = 0; i<= real_end-real_start; i+=PGSIZE){
+		if (!(p = page_alloc(0)))
+			panic("not enough memory!\n");
+		pte_t* tmp = pgdir_walk(e->env_pgdir, real_start + i, true);
+		*tmp = page2pa(p) | PTE_P | PTE_U | PTE_W;
+		++p->pp_ref;
+	}
+
 }
 
 //
@@ -336,8 +352,30 @@ load_icode(struct Env *e, uint8_t *binary)
 
 	// LAB 3: Your code here.
 
+	// is this a valid ELF?
+
+
+	lcr3(PADDR(e->env_pgdir));
+	struct Proghdr *ph, *eph;
+	struct Elf* env_elf = (struct Elf*) binary;
+	if (env_elf->e_magic != ELF_MAGIC)
+		panic("elf magic number not correct!\n");
+	ph = (struct Proghdr *) ((uint8_t *) env_elf + env_elf->e_phoff);
+	eph = ph + env_elf->e_phnum;
+	for (; ph < eph; ph++){
+		if (ph->p_type == ELF_PROG_LOAD){
+			region_alloc(e, ph->p_va, ph->p_memsz);
+			memcpy(ph->p_va, binary+ph->p_offset, ph->p_filesz);
+			memset(ph->p_va + ph->p_filesz, 0, ph->p_memsz - ph->p_filesz);
+		}
+	}
+	lcr3(PADDR(kern_pgdir));
+	/* do nothing */;
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
+	region_alloc(e, USTACKTOP - PGSIZE, PGSHIFT);
+
+	env_run(e);
 
 	// LAB 3: Your code here.
 }
@@ -353,6 +391,10 @@ void
 env_create(uint8_t *binary, enum EnvType type)
 {
 	// LAB 3: Your code here.
+	struct Env* e;
+	env_alloc(&e, 0);
+	e->env_type = type;
+	load_icode(e, binary);
 }
 
 //
