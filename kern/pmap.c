@@ -474,6 +474,7 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
                 panic("va or pa or size is not PGSIZEs");
         for (uint32_t i = 0; i<size; i+=PGSIZE){
         	//cprintf("boot_map_region i: %x\n", i);
+        	/*
         	if ((pa + i) % PTSIZE==0){
         		//cprintf("boot_map_region i: %x\n", va + i);
         		if (!(pgdir[PDX(va + i)] & PTE_P)){
@@ -483,6 +484,7 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
         			continue;
         		}
         	}
+        	*/
                 pte_t* map_pte = pgdir_walk(pgdir, (void*)(va + i), true);
                 *map_pte = (pa + i) | PTE_P | perm;
                 pgdir[PDX(va + i)] |= perm;
