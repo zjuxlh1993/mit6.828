@@ -292,6 +292,7 @@ region_alloc(struct Env *e, void *va, size_t len)
 			panic("not enough memory!\n");
 		pte_t* tmp = pgdir_walk(e->env_pgdir, (void*)(real_start + i), true);
 		*tmp = page2pa(p) | PTE_P | PTE_U | PTE_W;
+		e->env_pgdir[PDX(va)] |= PTE_P | PTE_U | PTE_W;
 		++p->pp_ref;
 	}
 
@@ -354,22 +355,31 @@ load_icode(struct Env *e, uint8_t *binary)
 
 	// is this a valid ELF?
 
-
+	//cprintf("switch pg from kern_padir\n");
 	lcr3(PADDR(e->env_pgdir));
+	//cprintf("switch pg 2 e->env_pgdir\n");
 	struct Proghdr *ph, *eph;
 	struct Elf* env_elf = (struct Elf*) binary;
+	//cprintf("binary\n");
 	if (env_elf->e_magic != ELF_MAGIC)
 		panic("elf magic number not correct!\n");
 	ph = (struct Proghdr *) ((uint8_t *) env_elf + env_elf->e_phoff);
 	eph = ph + env_elf->e_phnum;
+	cprintf("eph %x\n", kern_pgdir);
 	for (; ph < eph; ph++){
 		if (ph->p_type == ELF_PROG_LOAD){
+			cprintf("region_alloc %x %x\n", ph->p_va, ph->p_memsz);
 			region_alloc(e, (void *)ph->p_va, ph->p_memsz);
+			cprintf("pgdir %x\n", e->env_pgdir[PDX(ph->p_va)]);
+			cprintf("memcpy %x %x %x\n", ph->p_va, binary+ph->p_offset, ph->p_filesz);
 			memcpy((char*)ph->p_va, binary+ph->p_offset, ph->p_filesz);
+			cprintf("memcpy %x %x\n", ph->p_va + ph->p_filesz, ph->p_memsz - ph->p_filesz);
 			memset((char*)ph->p_va + ph->p_filesz, 0, ph->p_memsz - ph->p_filesz);
 		}
 	}
+	cprintf("switch pg from e->env_pgdir\n");
 	lcr3(PADDR(kern_pgdir));
+	cprintf("switch pg 2 kern_padir\n");
 	/* do nothing */;
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
