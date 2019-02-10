@@ -365,21 +365,22 @@ load_icode(struct Env *e, uint8_t *binary)
 		panic("elf magic number not correct!\n");
 	ph = (struct Proghdr *) ((uint8_t *) env_elf + env_elf->e_phoff);
 	eph = ph + env_elf->e_phnum;
-	cprintf("eph %x\n", kern_pgdir);
+	warn("eph %x", kern_pgdir);
 	for (; ph < eph; ph++){
 		if (ph->p_type == ELF_PROG_LOAD){
-			cprintf("region_alloc %x %x\n", ph->p_va, ph->p_memsz);
+			warn("region_alloc %x %x", ph->p_va, ph->p_memsz);
 			region_alloc(e, (void *)ph->p_va, ph->p_memsz);
-			cprintf("pgdir %x\n", e->env_pgdir[PDX(ph->p_va)]);
-			cprintf("memcpy %x %x %x\n", ph->p_va, binary+ph->p_offset, ph->p_filesz);
+			warn("pgdir %x", e->env_pgdir[PDX(ph->p_va)]);
+			warn("memcpy %x %x %x", ph->p_va, binary+ph->p_offset, ph->p_filesz);
 			memcpy((char*)ph->p_va, binary+ph->p_offset, ph->p_filesz);
-			cprintf("memcpy %x %x\n", ph->p_va + ph->p_filesz, ph->p_memsz - ph->p_filesz);
+			warn("memcpy %x %x", ph->p_va + ph->p_filesz, ph->p_memsz - ph->p_filesz);
 			memset((char*)ph->p_va + ph->p_filesz, 0, ph->p_memsz - ph->p_filesz);
 		}
 	}
-	cprintf("switch pg from e->env_pgdir\n");
+	warn("switch pg from e->env_pgdir");
 	lcr3(PADDR(kern_pgdir));
-	cprintf("switch pg 2 kern_padir\n");
+	warn("switch pg 2 kern_padir");
+	e->env_tf.tf_eip = env_elf->e_entry;
 	/* do nothing */;
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
@@ -521,6 +522,7 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
+	warn("change states");
 	if (curenv && curenv->env_status == ENV_RUNNING){
 		curenv->env_status = ENV_RUNNABLE;
 	}
@@ -528,7 +530,9 @@ env_run(struct Env *e)
 	curenv->env_status = ENV_RUNNING;
 	++curenv->env_runs;
 	lcr3(PADDR(curenv->env_pgdir));
+	warn("env_pop_tf %x", &curenv->env_tf);
 	env_pop_tf(&curenv->env_tf);
+	warn("return from env_pop_tf");
 
 	panic("env_run not yet implemented");
 }
