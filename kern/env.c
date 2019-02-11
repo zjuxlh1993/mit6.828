@@ -282,12 +282,12 @@ region_alloc(struct Env *e, void *va, size_t len)
 	uint32_t va_end = (uint32_t)va + len;
 
 	uint32_t real_start = ROUNDDOWN((uint32_t)va, PGSIZE);
-	uint32_t real_end = ROUNDDOWN(va_end, PGSIZE);
-	if (va_end<(uint32_t)va) 
+	uint32_t real_end = ROUNDUP(va_end, PGSIZE);
+	if (real_end<=real_start) 
 		panic("memory out of range!\n");
 	
 	struct PageInfo *p = NULL;
-	for (uint32_t i = 0; i<= real_end-real_start; i+=PGSIZE){
+	for (uint32_t i = 0; i< real_end-real_start; i+=PGSIZE){
 		if (!(p = page_alloc(0)))
 			panic("not enough memory!\n");
 		pte_t* tmp = pgdir_walk(e->env_pgdir, (void*)(real_start + i), true);
@@ -381,10 +381,11 @@ load_icode(struct Env *e, uint8_t *binary)
 	lcr3(PADDR(kern_pgdir));
 	warn("switch pg 2 kern_padir");
 	e->env_tf.tf_eip = env_elf->e_entry;
+	warn("entry point %x", env_elf->e_entry);
 	/* do nothing */;
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
-	region_alloc(e, (void*)(USTACKTOP - PGSIZE), PGSHIFT);
+	region_alloc(e, (void*)(USTACKTOP - PGSIZE), PGSIZE);
 
 	env_run(e);
 
