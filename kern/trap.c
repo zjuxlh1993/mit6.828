@@ -250,12 +250,20 @@ void
 page_fault_handler(struct Trapframe *tf)
 {
 	uint32_t fault_va;
-
+	//panic("page fault");
+	
 	// Read processor's CR2 register to find the faulting address
 	fault_va = rcr2();
-
+	cprintf("page fault\n");
 	// Handle kernel-mode page faults.
-
+	if ((tf->tf_cs & 3) == 0){
+		//pte_t* tp = pgdir_walk(curenv->env_pgdir,(void*)fault_va,0);
+		cprintf("page fault in kernel\n");
+		panic("stop");
+		//struct PageInfo* pg = page_alloc(ALLOC_ZERO);
+		//page_insert(curenv->env_pgdir, );
+		return;
+	}
 	// LAB 3: Your code here.
 
 	// We've already handled kernel-mode exceptions, so if we get here,
@@ -266,5 +274,6 @@ page_fault_handler(struct Trapframe *tf)
 		curenv->env_id, fault_va, tf->tf_eip);
 	print_trapframe(tf);
 	env_destroy(curenv);
+	panic("stop");
 }
 
