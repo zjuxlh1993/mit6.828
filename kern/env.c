@@ -283,7 +283,7 @@ region_alloc(struct Env *e, void *va, size_t len)
 
 	uint32_t real_start = ROUNDDOWN((uint32_t)va, PGSIZE);
 	uint32_t real_end = ROUNDUP(va_end, PGSIZE);
-	warn("alloc va from %x to %x",real_start,real_end);
+	//warn("alloc va from %x to %x",real_start,real_end);
 	if (real_end<=real_start) 
 		panic("memory out of range!\n");
 	
@@ -369,16 +369,16 @@ load_icode(struct Env *e, uint8_t *binary)
 	//warn("eph %x", kern_pgdir);
 	for (; ph < eph; ph++){
 		if (ph->p_type == ELF_PROG_LOAD){
-			warn("region_alloc %x %x %x", ph->p_va, ph->p_memsz,kern_pgdir);
+			//warn("region_alloc %x %x %x", ph->p_va, ph->p_memsz,kern_pgdir);
 			region_alloc(e, (void *)ph->p_va, ph->p_memsz);
-			warn("pgdir %x", e->env_pgdir[PDX(ph->p_va)]);
-			warn("memcpy %x %x %x", ph->p_va, binary+ph->p_offset, ph->p_filesz);
+			//warn("pgdir %x", e->env_pgdir[PDX(ph->p_va)]);
+			//warn("memcpy %x %x %x", ph->p_va, binary+ph->p_offset, ph->p_filesz);
 			memcpy((char*)ph->p_va, binary+ph->p_offset, ph->p_filesz);
-			warn("memcpy %x %x", ph->p_va + ph->p_filesz, ph->p_memsz - ph->p_filesz);
+			//warn("memcpy %x %x", ph->p_va + ph->p_filesz, ph->p_memsz - ph->p_filesz);
 			memset((char*)ph->p_va + ph->p_filesz, 0, ph->p_memsz - ph->p_filesz);
 		}
 	}
-	warn("switch pg from e->env_pgdir");
+	//warn("switch pg from e->env_pgdir");
 	lcr3(PADDR(kern_pgdir));
 	//warn("switch pg 2 kern_padir");
 	e->env_tf.tf_eip = env_elf->e_entry;
@@ -524,7 +524,7 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
-	warn("change states");
+	//warn("change states");
 	if (curenv && curenv->env_status == ENV_RUNNING){
 		curenv->env_status = ENV_RUNNABLE;
 	}

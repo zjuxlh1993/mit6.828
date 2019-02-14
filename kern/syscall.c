@@ -21,7 +21,12 @@ sys_cputs(const char *s, size_t len)
 	// Destroy the environment if not.
 
 	// LAB 3: Your code here.
-
+	uint32_t ret = 0;
+	ret = user_mem_check(curenv, (void*)s, len, PTE_U | PTE_W | PTE_P);
+	if (ret) {
+		cprintf("[%08x] user_mem_check assertion failure for va %08x\n", curenv->env_id, ret);
+		env_destroy(curenv);
+	}
 	// Print the string supplied by the user.
 	cprintf("%.*s", len, s);
 }
@@ -38,6 +43,7 @@ sys_cgetc(void)
 static envid_t
 sys_getenvid(void)
 {
+	//warn("%d",curenv->env_id);
 	return curenv->env_id;
 }
 
@@ -71,7 +77,7 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	// LAB 3: Your code here.
 
 	//panic("syscall not implemented");
-
+	warn("%d %d",curenv->env_id,syscallno);
 	switch (syscallno) {
 	case SYS_cputs:
 		sys_cputs((const char*)a1, a2);

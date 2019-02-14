@@ -187,13 +187,13 @@ trap_dispatch(struct Trapframe *tf)
 	{
 		case T_PGFLT:
 			page_fault_handler(tf);
-			break;
+			return;
 		case T_BRKPT:
 			monitor(tf);
-			break;
+			return;
 		case T_SYSCALL:
 			syscall(tf->tf_regs.reg_eax, tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx, tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
-			break;
+			return;
 		default:
 			break;
 	}
@@ -259,7 +259,7 @@ page_fault_handler(struct Trapframe *tf)
 	// Handle kernel-mode page faults.
 	if ((tf->tf_cs & 3) == 0){
 		//pte_t* tp = pgdir_walk(curenv->env_pgdir,(void*)fault_va,0);
-		cprintf("page fault in kernel %x\n", curenv);
+		//cprintf("page fault in kernel %x\n", curenv);
 		panic("stop");
 		//struct PageInfo* pg = page_alloc(ALLOC_ZERO);
 		//page_insert(curenv->env_pgdir, );
