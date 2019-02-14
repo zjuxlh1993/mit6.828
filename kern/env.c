@@ -283,6 +283,7 @@ region_alloc(struct Env *e, void *va, size_t len)
 
 	uint32_t real_start = ROUNDDOWN((uint32_t)va, PGSIZE);
 	uint32_t real_end = ROUNDUP(va_end, PGSIZE);
+	warn("alloc va from %x to %x",real_start,real_end);
 	if (real_end<=real_start) 
 		panic("memory out of range!\n");
 	
@@ -292,7 +293,7 @@ region_alloc(struct Env *e, void *va, size_t len)
 			panic("not enough memory!\n");
 		pte_t* tmp = pgdir_walk(e->env_pgdir, (void*)(real_start + i), true);
 		*tmp = page2pa(p) | PTE_P | PTE_U | PTE_W;
-		e->env_pgdir[PDX(va)] |= PTE_P | PTE_U | PTE_W;
+		e->env_pgdir[PDX(real_start + i)] |= PTE_P | PTE_U | PTE_W;
 		++p->pp_ref;
 	}
 
@@ -365,10 +366,10 @@ load_icode(struct Env *e, uint8_t *binary)
 		panic("elf magic number not correct!\n");
 	ph = (struct Proghdr *) ((uint8_t *) env_elf + env_elf->e_phoff);
 	eph = ph + env_elf->e_phnum;
-	warn("eph %x", kern_pgdir);
+	//warn("eph %x", kern_pgdir);
 	for (; ph < eph; ph++){
 		if (ph->p_type == ELF_PROG_LOAD){
-			warn("region_alloc %x %x", ph->p_va, ph->p_memsz);
+			warn("region_alloc %x %x %x", ph->p_va, ph->p_memsz,kern_pgdir);
 			region_alloc(e, (void *)ph->p_va, ph->p_memsz);
 			warn("pgdir %x", e->env_pgdir[PDX(ph->p_va)]);
 			warn("memcpy %x %x %x", ph->p_va, binary+ph->p_offset, ph->p_filesz);
@@ -379,14 +380,14 @@ load_icode(struct Env *e, uint8_t *binary)
 	}
 	warn("switch pg from e->env_pgdir");
 	lcr3(PADDR(kern_pgdir));
-	warn("switch pg 2 kern_padir");
+	//warn("switch pg 2 kern_padir");
 	e->env_tf.tf_eip = env_elf->e_entry;
-	warn("entry point %x", env_elf->e_entry);
+	//warn("entry point %x", env_elf->e_entry);
 	/* do nothing */;
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
 	region_alloc(e, (void*)(USTACKTOP - PGSIZE), PGSIZE);
-
+	
 	env_run(e);
 
 	// LAB 3: Your code here.
@@ -530,10 +531,11 @@ env_run(struct Env *e)
 	curenv = e;
 	curenv->env_status = ENV_RUNNING;
 	++curenv->env_runs;
+	//warn("curenv %x", curenv);
 	lcr3(PADDR(curenv->env_pgdir));
-	warn("env_pop_tf %x", &curenv->env_tf);
+	//warn("env_pop_tf %x", &curenv->env_tf);
 	env_pop_tf(&curenv->env_tf);
-	warn("return from env_pop_tf");
+	//warn("return from env_pop_tf");
 
 	panic("env_run not yet implemented");
 }

@@ -242,6 +242,7 @@ trap(struct Trapframe *tf)
 
 	// Return to the current environment, which should be running.
 	assert(curenv && curenv->env_status == ENV_RUNNING);
+	
 	env_run(curenv);
 }
 
@@ -254,11 +255,11 @@ page_fault_handler(struct Trapframe *tf)
 	
 	// Read processor's CR2 register to find the faulting address
 	fault_va = rcr2();
-	cprintf("page fault\n");
+	cprintf("page fault %x\n", fault_va);
 	// Handle kernel-mode page faults.
 	if ((tf->tf_cs & 3) == 0){
 		//pte_t* tp = pgdir_walk(curenv->env_pgdir,(void*)fault_va,0);
-		cprintf("page fault in kernel\n");
+		cprintf("page fault in kernel %x\n", curenv);
 		panic("stop");
 		//struct PageInfo* pg = page_alloc(ALLOC_ZERO);
 		//page_insert(curenv->env_pgdir, );
