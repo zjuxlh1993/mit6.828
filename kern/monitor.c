@@ -6,14 +6,17 @@
 #include <inc/memlayout.h>
 #include <inc/assert.h>
 #include <inc/x86.h>
+#include <inc/mmu.h>
 
 #include <kern/console.h>
 #include <kern/monitor.h>
 #include <kern/kdebug.h>
 #include <kern/trap.h>
+#include <kern/env.h>
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
+static bool mon_si_set_tf = false;
 
 struct Command {
 	const char *name;
@@ -26,9 +29,22 @@ static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
 	{ "backtrace", "Display information about stack", mon_backtrace},
+	{ "si", "user mode single step debug", mon_si},
 };
 
 /***** Implementations of basic kernel monitor commands *****/
+
+int 
+mon_si(int argc, char **argv, struct Trapframe *tf)
+{
+	int i;
+	extern struct Env *curenv;
+	cprintf("[%08x] env debug\n", curenv->env_id);
+	curenv->env_tf.tf_eflags |= FL_TF;
+	mon_si_set_tf = true;
+	env_run(curenv);
+	return 0;
+}
 
 int
 mon_help(int argc, char **argv, struct Trapframe *tf)
@@ -129,7 +145,8 @@ monitor(struct Trapframe *tf)
 
 	cprintf("Welcome to the JOS kernel monitor!\n");
 	cprintf("Type 'help' for a list of commands.\n");
-
+	mon_si_set_tf = false;
+	
 	if (tf != NULL)
 		print_trapframe(tf);
 
