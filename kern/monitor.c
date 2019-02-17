@@ -29,11 +29,11 @@ static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
 	{ "backtrace", "Display information about stack", mon_backtrace},
-	{ "si", "user mode single step debug", mon_si},
+	//{ "si", "user mode single step debug", mon_si},
 };
 
 /***** Implementations of basic kernel monitor commands *****/
-
+/*
 int 
 mon_si(int argc, char **argv, struct Trapframe *tf)
 {
@@ -44,7 +44,7 @@ mon_si(int argc, char **argv, struct Trapframe *tf)
 	mon_si_set_tf = true;
 	env_run(curenv);
 	return 0;
-}
+}*/
 
 int
 mon_help(int argc, char **argv, struct Trapframe *tf)
@@ -145,7 +145,7 @@ monitor(struct Trapframe *tf)
 
 	cprintf("Welcome to the JOS kernel monitor!\n");
 	cprintf("Type 'help' for a list of commands.\n");
-	mon_si_set_tf = false;
+	//mon_si_set_tf = false;
 	
 	if (tf != NULL)
 		print_trapframe(tf);

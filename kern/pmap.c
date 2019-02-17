@@ -327,7 +327,13 @@ mem_init_mp(void)
 	//     Permissions: kernel RW, user NONE
 	//
 	// LAB 4: Your code here:
-
+	for (uint32_t i=0; i!=NCPU; i++){
+		boot_map_region(kern_pgdir, 
+			KSTACKTOP - i * (KSTKSIZE + KSTKGAP) - KSTKGAP, 
+			KSTKSIZE, 
+			PADDR(&percpu_kstacks[i]),
+			PTE_W);
+	}
 }
 
 // --------------------------------------------------------------
@@ -368,6 +374,8 @@ page_init(void)
 	// free pages!
 	size_t i;
 	for (i = 1; i < npages_basemem; i++) {
+		if (i==PGNUM(MPENTRY_PADDR))
+			continue;
                 pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
@@ -645,6 +653,7 @@ mmio_map_region(physaddr_t pa, size_t size)
 	// value will be preserved between calls to mmio_map_region
 	// (just like nextfree in boot_alloc).
 	static uintptr_t base = MMIOBASE;
+	
 
 	// Reserve size bytes of virtual memory starting at base and
 	// map physical pages [pa,pa+size) to virtual addresses
@@ -664,7 +673,15 @@ mmio_map_region(physaddr_t pa, size_t size)
 	// Hint: The staff solution uses boot_map_region.
 	//
 	// Your code here:
-	panic("mmio_map_region not implemented");
+	if (base+size>=MMIOLIM || size<0)
+		panic("out of memory!");
+	uint32_t ret = base;
+	size = ROUNDUP(size, PGSIZE);
+	pa = ROUNDDOWN(pa, PGSIZE);
+	base += size;
+	boot_map_region(kern_pgdir, ret, size, pa, PTE_P|PTE_PCD|PTE_PWT|PTE_W);
+	return (void*)ret;
+	//panic("mmio_map_region not implemented");
 }
 
 static uintptr_t user_mem_check_addr;
