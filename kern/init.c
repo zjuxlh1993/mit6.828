@@ -23,6 +23,7 @@ i386_init(void)
 {
 	// Initialize the console.
 	// Can't call cprintf until after we do this!
+	lock_kernel();
 	cons_init();
 
 	//cprintf("6828 decimal is %o octal!\n", 6828);
@@ -95,6 +96,7 @@ boot_aps(void)
 void
 mp_main(void)
 {
+	lock_kernel();
 	// We are in high EIP now, safe to switch to kern_pgdir 
 	lcr3(PADDR(kern_pgdir));
 	cprintf("SMP: CPU %d starting\n", cpunum());
