@@ -332,7 +332,7 @@ mem_init_mp(void)
 			KSTACKTOP - i * (KSTKSIZE + KSTKGAP) - KSTKGAP, 
 			KSTKSIZE, 
 			PADDR(&percpu_kstacks[i]),
-			PTE_W);
+			PTE_P | PTE_W);
 	}
 }
 
