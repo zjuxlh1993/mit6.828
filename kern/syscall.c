@@ -44,7 +44,7 @@ sys_cgetc(void)
 static envid_t
 sys_getenvid(void)
 {
-	//warn("%d",curenv->env_id);
+	//warn("cpu0 :%x, cpu1 :%x",cpus[0].cpu_env->env_id,cpus[1].cpu_env->env_id);
 	return curenv->env_id;
 }
 
@@ -279,6 +279,7 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 
 	//panic("syscall not implemented");
 	//warn("%d %d",curenv->env_id,syscallno);
+	uint32_t ret = 0;
 	switch (syscallno) {
 	case SYS_cputs:
 		sys_cputs((const char*)a1, a2);
@@ -286,7 +287,9 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	case SYS_cgetc:
 		return sys_cgetc();
 	case SYS_getenvid:
-		return sys_getenvid();
+		ret = sys_getenvid();
+		//warn("ret: %x", ret);
+		return ret;
 	case SYS_env_destroy:
 		return sys_env_destroy(a1);
 	case SYS_yield:

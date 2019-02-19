@@ -55,8 +55,11 @@ i386_init(void)
 	// Touch all you want.
 	//ENV_CREATE(user_primes, ENV_TYPE_USER);
 	ENV_CREATE(user_yield, ENV_TYPE_USER);
+	//warn("creat 1st");
 	ENV_CREATE(user_yield, ENV_TYPE_USER);
+	//warn("creat 2nd");
 	ENV_CREATE(user_yield, ENV_TYPE_USER);
+	//warn("creat 3rd");
 #endif // TEST*
 
 	// Schedule and run the first user environment!
@@ -114,6 +117,7 @@ mp_main(void)
 	// only one CPU can enter the scheduler at a time!
 	//
 	// Your code here:
+	//cprintf("SMP: CPU %d has started\n", cpunum());
 	lock_kernel();
 	sched_yield();
 	

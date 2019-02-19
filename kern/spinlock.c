@@ -76,6 +76,7 @@ spin_lock(struct spinlock *lk)
 #ifdef DEBUG_SPINLOCK
 	lk->cpu = thiscpu;
 	get_caller_pcs(lk->pcs);
+	//warn("CPU %d acquire %s", cpunum(), lk->name);
 #endif
 }
 

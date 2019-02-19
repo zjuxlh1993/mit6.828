@@ -12,7 +12,6 @@ void
 sched_yield(void)
 {
 	struct Env *idle;
-
 	// Implement simple round-robin scheduling.
 	//
 	// Search through 'envs' for an ENV_RUNNABLE environment in
@@ -29,23 +28,35 @@ sched_yield(void)
 	// below to halt the cpu.
 
 	// LAB 4: Your code here.
-	
-	uint32_t env_id = ENVX(curenv->env_id);
-	//warn("%x id request sched %x", curenv->env_id, env_id);
-	for (int i = (env_id + 1)%NENV; i!=env_id; i = (i+1)%NENV){
-		//cprintf("%x\n",i);
+	//warn("%x %x %x %x %x",curenv, cpunum(), cpus, cpus[1].cpu_id);
+	//warn("sched_yield env0:%d env1:%d env:%d",envs[0].env_status,envs[1].env_status,envs[2].env_status);
+	uint32_t env_id;
+	if (curenv != NULL)
+		env_id = ENVX(curenv->env_id);
+	else
+		env_id = NENV-1;
+	//warn("test %d",envs[NENV-1].env_status);
+	for (uint32_t i = (env_id + 1)%NENV; i!=env_id; i = (i+1)%NENV){
 		if (envs[i].env_status == ENV_RUNNABLE){
+			if (curenv)
+				curenv->env_status = ENV_RUNNABLE;
 			curenv = &envs[i];
+			curenv->env_status = ENV_RUNNING;
+			//warn("cpu %d choose %x",cpunum(), curenv->env_id);
+			//warn("ENV_RUNNABLE env0:%d env1:%d env:%d",envs[0].env_status,envs[1].env_status,envs[2].env_status);
 			env_run(curenv);
 		}
 	}
-	//warn("%x id request sched %x", curenv->env_id, env_id);
-	if (envs[env_id].env_status == ENV_RUNNING){
-			curenv = &envs[env_id];
-			env_run(curenv);		
+	//warn("%x id request sched %x", env_id, env_id);
+	if (curenv && curenv->env_status == ENV_RUNNING){
+		//warn("cpu %d choose %x",cpunum(),curenv->env_id);
+		//warn("ENV_RUNNING env0:%d env1:%d env:%d",envs[0].env_status,envs[1].env_status,envs[2].env_status);
+		env_run(curenv);		
 	}
-	//warn("%x id request sched %x", curenv->env_id, env_id);
+	//warn("nothing!");
 	// sched_halt never returns
+	//unlock_kernel();
+	//warn("nothing!");
 	sched_halt();
 }
 
@@ -56,7 +67,7 @@ void
 sched_halt(void)
 {
 	int i;
-
+	
 	// For debugging and testing purposes, if there are no runnable
 	// environments in the system, then drop into the kernel monitor.
 	for (i = 0; i < NENV; i++) {
@@ -65,24 +76,25 @@ sched_halt(void)
 		     envs[i].env_status == ENV_DYING))
 			break;
 	}
+	//warn("nothing!");
 	if (i == NENV) {
 		cprintf("No runnable environments in the system!\n");
 		while (1)
 			monitor(NULL);
 	}
-
+	// warn("nothing!");
 	// Mark that no environment is running on this CPU
 	curenv = NULL;
 	lcr3(PADDR(kern_pgdir));
-
+	//warn("nothing!");
 	// Mark that this CPU is in the HALT state, so that when
 	// timer interupts come in, we know we should re-acquire the
 	// big kernel lock
 	xchg(&thiscpu->cpu_status, CPU_HALTED);
-
+	// warn("nothing!");
 	// Release the big kernel lock as if we were "leaving" the kernel
 	unlock_kernel();
-
+	// warn("nothing!");
 	// Reset stack pointer, enable interrupts and then halt.
 	asm volatile (
 		"movl $0, %%ebp\n"

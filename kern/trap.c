@@ -227,7 +227,7 @@ trap_dispatch(struct Trapframe *tf)
 			monitor(tf);
 			return;
 		case T_SYSCALL:
-			syscall(tf->tf_regs.reg_eax, tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx, tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
+			curenv->env_tf.tf_regs.reg_eax = syscall(tf->tf_regs.reg_eax, tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx, tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, tf->tf_regs.reg_esi);
 			return;
 		default:
 			break;
@@ -258,7 +258,6 @@ trap_dispatch(struct Trapframe *tf)
 void
 trap(struct Trapframe *tf)
 {
-	lock_kernel();
 	// The environment may have set DF and some versions
 	// of GCC rely on DF being clear
 	asm volatile("cld" ::: "cc");
@@ -282,6 +281,7 @@ trap(struct Trapframe *tf)
 		// Acquire the big kernel lock before doing any
 		// serious kernel work.
 		// LAB 4: Your code here.
+		lock_kernel();
 		assert(curenv);
 
 		// Garbage collect if current enviroment is a zombie

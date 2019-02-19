@@ -400,7 +400,7 @@ load_icode(struct Env *e, uint8_t *binary)
 	// at virtual address USTACKTOP - PGSIZE.
 	region_alloc(e, (void*)(USTACKTOP - PGSIZE), PGSIZE);
 	
-	env_run(e);
+	//env_run(e);
 
 	// LAB 3: Your code here.
 }
@@ -418,6 +418,7 @@ env_create(uint8_t *binary, enum EnvType type)
 	// LAB 3: Your code here.
 	struct Env* e;
 	env_alloc(&e, 0);
+	//warn("%x",e->env_id);
 	e->env_type = type;
 	load_icode(e, binary);
 }
@@ -492,8 +493,9 @@ env_destroy(struct Env *e)
 	}
 
 	env_free(e);
-
+	//warn("%x %x",curenv->env_id, e->env_id);
 	if (curenv == e) {
+		//warn("test");
 		curenv = NULL;
 		sched_yield();
 	}
