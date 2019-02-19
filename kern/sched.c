@@ -29,19 +29,22 @@ sched_yield(void)
 	// below to halt the cpu.
 
 	// LAB 4: Your code here.
-
+	
 	uint32_t env_id = ENVX(curenv->env_id);
-
+	//warn("%x id request sched %x", curenv->env_id, env_id);
 	for (int i = (env_id + 1)%NENV; i!=env_id; i = (i+1)%NENV){
+		//cprintf("%x\n",i);
 		if (envs[i].env_status == ENV_RUNNABLE){
 			curenv = &envs[i];
 			env_run(curenv);
 		}
 	}
-	if (envs[env_id].env_status == ENV_RUNNABLE){
+	//warn("%x id request sched %x", curenv->env_id, env_id);
+	if (envs[env_id].env_status == ENV_RUNNING){
 			curenv = &envs[env_id];
 			env_run(curenv);		
 	}
+	//warn("%x id request sched %x", curenv->env_id, env_id);
 	// sched_halt never returns
 	sched_halt();
 }
