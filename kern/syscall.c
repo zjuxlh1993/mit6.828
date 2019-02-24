@@ -171,6 +171,17 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 	//   allocated!
 
 	// LAB 4: Your code here.
+	if (!CHECK_USER_VA(va) || !(perm & PTE_U) || !(perm & PTE_P))
+		return -E_INVAL;
+	struct Env* e;
+	int ret = envid2env(envid, &e, true);	
+	if (ret<0)
+		return ret;
+	struct PageInfo *pg = page_alloc(ALLOC_ZERO);
+	if (!pg)
+		return -E_NO_MEM;
+	if (ret = page_insert(e->env_pgdir, pg, va, perm))
+		return ret;
 	panic("sys_page_alloc not implemented");
 }
 
@@ -202,6 +213,14 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	//   check the current permissions on the page.
 
 	// LAB 4: Your code here.
+	if (!CHECK_USER_VA(srcva) || !CHECK_USER_VA(dstva) || !(perm & PTE_U) || !(perm & PTE_P))
+		return -E_INVAL;
+	struct Env* src, dst;
+	int ret = envid2env(envid, &src, true) | envid2env(envid, &dst, true);
+	if (ret<0)
+		return ret;
+	
+	
 	panic("sys_page_map not implemented");
 }
 
