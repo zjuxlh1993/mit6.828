@@ -97,6 +97,8 @@ sys_exofork(void)
 		env_alloc(&e, 0);
 	e->env_status = ENV_NOT_RUNNABLE;
 	e->env_tf = curenv->env_tf;
+	e->env_tf.tf_regs.reg_eax = 0;
+	warn("envid=%x",e->env_id);
 	return e->env_id;
 	//panic("sys_exofork not implemented");
 }
@@ -182,6 +184,7 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 		return -E_NO_MEM;
 	if ((ret = page_insert(e->env_pgdir, pg, va, perm)))
 		return ret;
+	return 0;
 	//panic("sys_page_alloc not implemented");
 }
 
@@ -227,6 +230,7 @@ sys_page_map(envid_t srcenvid, void *srcva,
 		return -E_INVAL; 
 	if ((ret = page_insert(dst->env_pgdir, pg, dstva, perm)))
 		return ret;
+	return 0;
 	//panic("sys_page_map not implemented");
 }
 
@@ -343,6 +347,17 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		return sys_env_destroy(a1);
 	case SYS_yield:
 		sys_yield();
+		break;
+	case SYS_exofork:
+		return sys_exofork();
+	case SYS_page_map:
+		return sys_page_map(a1, (void*)a2, a3, (void*)a4, a5);
+	case SYS_page_unmap:
+		return sys_page_unmap(a1, (void*)a2);
+	case SYS_page_alloc:
+		return sys_page_alloc(a1, (void*)a2, a3);
+	case SYS_env_set_status:
+		return sys_env_set_status(a1, a2);
 	default:
 		return -E_INVAL;
 	}
