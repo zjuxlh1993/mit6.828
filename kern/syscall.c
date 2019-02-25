@@ -143,6 +143,12 @@ static int
 sys_env_set_pgfault_upcall(envid_t envid, void *func)
 {
 	// LAB 4: Your code here.
+	struct Env* e;
+	int ret = envid2env(envid, &e, true);
+	if (ret<0) 
+		return ret;
+	e->env_pgfault_upcall = func;
+	return 0;
 	panic("sys_env_set_pgfault_upcall not implemented");
 }
 
