@@ -708,6 +708,7 @@ int
 user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 {
 	// LAB 3: Your code here.
+    perm |= PTE_P;
 	for (uint32_t i = (uint32_t)va; i<=((uint32_t)va+len); i =ROUNDDOWN(i + PGSIZE, PGSIZE)){
 		if (i<(uint32_t)va) break;
 		pte_t* pg = pgdir_walk(env->env_pgdir, (void*)(i), false);
