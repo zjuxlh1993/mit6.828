@@ -624,8 +624,8 @@ page_remove(pde_t *pgdir, void *va)
 	if (!tmp_pi || ((*store) & PTE_P) == 0)
 	        return;
 	*store = 0;
-        page_decref(tmp_pi);
-        tlb_invalidate(pgdir, va);	        
+    page_decref(tmp_pi);
+    tlb_invalidate(pgdir, va);	        
 }
 
 //

@@ -17,7 +17,7 @@ pgfault(struct UTrapframe *utf)
 	void *addr = (void *) utf->utf_fault_va;
 	uint32_t err = utf->utf_err;
 	int r;
-
+    
 	// Check that the faulting access was (1) a write, and (2) to a
 	// copy-on-write page.  If not, panic.
 	// Hint:
@@ -25,6 +25,13 @@ pgfault(struct UTrapframe *utf)
 	//   (see <inc/memlayout.h>).
 
 	// LAB 4: Your code here.
+
+    pte_t* user_pgdir = (pte_t*)UVPT;
+    pte_t pte = user_pgdir[PGNUM(addr)];
+
+    if (!((pte & PTE_W) && (pte & PTE_COW))){
+        panic("the page is not a copy-on-write page");
+    }
 
 	// Allocate a new page, map it at a temporary location (PFTEMP),
 	// copy the data from the old page to the new page, then move the new
@@ -34,7 +41,14 @@ pgfault(struct UTrapframe *utf)
 
 	// LAB 4: Your code here.
 
-	panic("pgfault not implemented");
+    if ((r = sys_page_alloc(0, (void*)PFTEMP, PTE_U | PTE_P | PTE_W))<0)
+        panic("user page alloc %e", r);
+    memcpy((void*)PFTEMP, ROUNDDOWN(addr), PGSIZE);
+    if ((r = sys_page_map(0, (void*)PFTEMP, 0, addr, PTE_U | PTE_P | PTE_W))<0)
+        panic("user page unmap %e", r);
+    if ((r = sys_page_unmap(0, (void*)PFTEMP))<0)
+        panic("user page unmap %e", r);   
+	//panic("pgfault not implemented");
 }
 
 //
