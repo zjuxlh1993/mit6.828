@@ -68,7 +68,22 @@ duppage(envid_t envid, unsigned pn)
 	int r;
 
 	// LAB 4: Your code here.
-	panic("duppage not implemented");
+
+    pte_t* user_pgdir = (pte_t*)UVPT;
+    pte_t pte = user_pgdir[pn];
+    uint32_t perm = PGOFF(pte);
+    if (!(perm & PTE_P))
+        return 0;
+    if ((perm & PTE_W) || (perm & PTE_COW)){
+        perm |= PTE_COW;
+        if ((r = sys_page_map(0, (void*)(pn*PGSIZE), envid, (void*)(pn*PGSIZE), perm))<0)
+            return r;       
+    } else {
+        if ((r = sys_page_map(0, (void*)(pn*PGSIZE), envid, (void*)(pn*PGSIZE), perm))<0)
+            return r;          
+    }
+
+	//panic("duppage not implemented");
 	return 0;
 }
 
@@ -92,7 +107,33 @@ envid_t
 fork(void)
 {
 	// LAB 4: Your code here.
-	panic("fork not implemented");
+    int r;
+    envid_t envid;
+    envid = sys_exofork();
+    if (envid < 0)
+		return envid;
+	if (envid == 0) {
+		// We're the child.
+		// The copied value of the global variable 'thisenv'
+		// is no longer valid (it refers to the parent!).
+		// Fix it and return 0.
+		thisenv = &envs[ENVX(sys_getenvid())];
+		return 0;
+	}
+    if (r<0) return r;
+    pte_t* user_pgdir = (pte_t*)UVPT;
+    for (uint32_t i = 0; i!=NPDENTRIES*NPTENTRIES; i++){
+        r = duppage(envid, i);
+        if (r<0)
+            return r;
+    }
+
+    // Start the child environment running
+	if ((r = sys_env_set_status(envid, ENV_RUNNABLE)) < 0)
+		panic("sys_env_set_status: %e", r);
+
+    return envid;
+	// panic("fork not implemented");
 }
 
 // Challenge!
