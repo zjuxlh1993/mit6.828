@@ -148,6 +148,7 @@ sys_env_set_pgfault_upcall(envid_t envid, void *func)
 	//warn("sys_env_set_pgfault_upcall envid2env ret %x",ret);
 	if (ret<0) 
 		return ret;
+	user_mem_assert(curenv, func, 1, PTE_U);
 	e->env_pgfault_upcall = func;
 	return 0;
 	//panic("sys_env_set_pgfault_upcall not implemented");
@@ -337,6 +338,7 @@ static int
 sys_page_set_perm(uint32_t envid, void* va, int perm)
 {
 	//warn("sys_page_set_perm perm:%x",perm);
+	user_mem_assert(curenv, va, 1, PTE_U);
 	struct Env* e;
 	if (!check_user_va(va))
 		return -E_INVAL;
