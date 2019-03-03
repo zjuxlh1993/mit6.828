@@ -25,11 +25,12 @@ pgfault(struct UTrapframe *utf)
 	//   (see <inc/memlayout.h>).
 
 	// LAB 4: Your code here.
-
+    cprintf("fault %x\n",addr);
+    //cprintf("[%08x] fault %x\n", thisenv->env_id, addr);
     pte_t* user_pgdir = (pte_t*)UVPT;
     pte_t pte = user_pgdir[PGNUM(addr)];
-
-    if (!((pte & PTE_W) && (pte & PTE_COW))){
+    //cprintf("enter pgfalut %x\n",pte);
+    if (!(pte & PTE_COW)){
         panic("the page is not a copy-on-write page");
     }
 
@@ -43,9 +44,9 @@ pgfault(struct UTrapframe *utf)
 
     if ((r = sys_page_alloc(0, (void*)PFTEMP, PTE_U | PTE_P | PTE_W))<0)
         panic("user page alloc %e", r);
-    memcpy((void*)PFTEMP, ROUNDDOWN(addr), PGSIZE);
-    if ((r = sys_page_map(0, (void*)PFTEMP, 0, addr, PTE_U | PTE_P | PTE_W))<0)
-        panic("user page unmap %e", r);
+    memcpy((void*)PFTEMP, ROUNDDOWN(addr, PGSIZE), PGSIZE);
+    if ((r = sys_page_map(0, (void*)PFTEMP, 0, ROUNDDOWN(addr, PGSIZE), PTE_U | PTE_P | PTE_W))<0)
+        panic("user page map %e", r);
     if ((r = sys_page_unmap(0, (void*)PFTEMP))<0)
         panic("user page unmap %e", r);   
 	//panic("pgfault not implemented");
@@ -68,19 +69,26 @@ duppage(envid_t envid, unsigned pn)
 	int r;
 
 	// LAB 4: Your code here.
-
-    pte_t* user_pgdir = (pte_t*)UVPT;
-    pte_t pte = user_pgdir[pn];
+    //cprintf("%x %x %x\n",&uvpt[pn],&uvpd[pn/NPTENTRIES],pn*PGSIZE);
+    if (!(uvpd[pn/NPTENTRIES] & PTE_P))
+    	return 0;
+    pte_t pte = uvpt[pn];
     uint32_t perm = PGOFF(pte);
-    if (!(perm & PTE_P))
+    
+    if (!(perm & PTE_P)|| !(perm & PTE_U))
         return 0;
     if ((perm & PTE_W) || (perm & PTE_COW)){
+        perm &= ~PTE_W;
         perm |= PTE_COW;
+        //cprintf("%x %x %x %x\n",uvpt[pn],uvpd[pn/NPTENTRIES],pn*PGSIZE, perm);
         if ((r = sys_page_map(0, (void*)(pn*PGSIZE), envid, (void*)(pn*PGSIZE), perm))<0)
-            return r;       
+            	return r; 
+        if ((r = sys_page_set_perm(0, (void*)(pn*PGSIZE), perm))<0)
+            	return r;
+        //cprintf("%x %x %x\n",uvpt[pn],uvpd[pn/NPTENTRIES],pn*PGSIZE);       
     } else {
         if ((r = sys_page_map(0, (void*)(pn*PGSIZE), envid, (void*)(pn*PGSIZE), perm))<0)
-            return r;          
+            	return r;          
     }
 
 	//panic("duppage not implemented");
@@ -103,35 +111,47 @@ duppage(envid_t envid, unsigned pn)
 //   Neither user exception stack should ever be marked copy-on-write,
 //   so you must allocate a new page for the child's user exception stack.
 //
+void (*_pgfault_handler)(struct UTrapframe *utf);
+extern void _pgfault_upcall(void);
 envid_t
 fork(void)
 {
 	// LAB 4: Your code here.
     int r;
+    set_pgfault_handler(pgfault);
     envid_t envid;
     envid = sys_exofork();
+    //cprintf("envid:%x %x\n",envid,_pgfault_handler);
     if (envid < 0)
 		return envid;
-	if (envid == 0) {
+    if (envid == 0) {
 		// We're the child.
 		// The copied value of the global variable 'thisenv'
 		// is no longer valid (it refers to the parent!).
 		// Fix it and return 0.
+		//cprintf("test1\n");
 		thisenv = &envs[ENVX(sys_getenvid())];
+		//cprintf("test2\n");
 		return 0;
-	}
-    if (r<0) return r;
-    pte_t* user_pgdir = (pte_t*)UVPT;
-    for (uint32_t i = 0; i!=NPDENTRIES*NPTENTRIES; i++){
-        r = duppage(envid, i);
-        if (r<0)
-            return r;
     }
-
+    pte_t* user_pgdir = (pte_t*)UVPT;
+    for (uint32_t i = 0; i<PGNUM(UTOP); i++){
+    	if (i == PGNUM(UXSTACKTOP)-1){
+    		if ((r=sys_page_alloc(envid, (void*)(UXSTACKTOP-PGSIZE), PTE_U | PTE_W | PTE_P))<0)
+    			panic("sys_page_alloc fault");
+    		continue;
+    	}
+        r = duppage(envid, i);
+        if (r<0){
+            cprintf("%x\n",i*PGSIZE);
+            return r;
+        }
+    }
     // Start the child environment running
+        if ((r = sys_env_set_pgfault_upcall(envid, _pgfault_upcall)<0))
+            panic("set pgfault upcall falut %e" ,r);
 	if ((r = sys_env_set_status(envid, ENV_RUNNABLE)) < 0)
 		panic("sys_env_set_status: %e", r);
-
     return envid;
 	// panic("fork not implemented");
 }

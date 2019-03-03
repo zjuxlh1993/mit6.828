@@ -235,6 +235,7 @@ trap_dispatch(struct Trapframe *tf)
 	// Handle spurious interrupts
 	// The hardware sometimes raises these because of noise on the
 	// IRQ line or other reasons. We don't care.
+	
 	if (tf->tf_trapno == IRQ_OFFSET + IRQ_SPURIOUS) {
 		cprintf("Spurious interrupt on irq 7\n");
 		print_trapframe(tf);
@@ -266,7 +267,7 @@ trap(struct Trapframe *tf)
 	extern char *panicstr;
 	if (panicstr)
 		asm volatile("hlt");
-
+	
 	// Re-acqurie the big kernel lock if we were halted in
 	// sched_yield()
 	if (xchg(&thiscpu->cpu_status, CPU_STARTED) == CPU_HALTED)
@@ -302,7 +303,7 @@ trap(struct Trapframe *tf)
 	// Record that tf is the last real trapframe so
 	// print_trapframe can print some additional information.
 	last_tf = tf;
-
+	
 	// Dispatch based on what type of trap occurred
 	trap_dispatch(tf);
 
@@ -320,11 +321,11 @@ void
 page_fault_handler(struct Trapframe *tf)
 {
 	uint32_t fault_va;
-	//panic("page fault");
+	//warn("page fault");
 	
 	// Read processor's CR2 register to find the faulting address
 	fault_va = rcr2();
-	//cprintf("page fault %x\n", fault_va);
+	//cprintf("[%08x] page fault %x\n", curenv->env_id, curenv->env_pgfault_upcall);
 	// Handle kernel-mode page faults.
 	if ((tf->tf_cs & 3) == 0){
 		//pte_t* tp = pgdir_walk(curenv->env_pgdir,(void*)fault_va,0);
@@ -369,8 +370,8 @@ page_fault_handler(struct Trapframe *tf)
 	//   (the 'tf' variable points at 'curenv->env_tf').
 
 	// LAB 4: Your code here.
-
     if (curenv->env_pgfault_upcall){
+    	//user_mem_assert(curenv, (void*)fault_va, 1, PTE_U | PTE_P);
         struct UTrapframe* utf;
         if (tf->tf_esp<UXSTACKTOP && tf->tf_esp>=UXSTACKTOP-PGSIZE){
             utf = (struct UTrapframe*)(tf->tf_esp - sizeof(struct UTrapframe) - 4);
@@ -388,6 +389,8 @@ page_fault_handler(struct Trapframe *tf)
         utf->utf_regs = tf->tf_regs;
         curenv->env_tf.tf_esp = (uintptr_t)utf;
         curenv->env_tf.tf_eip = (uintptr_t)curenv->env_pgfault_upcall;
+        //warn("env_run");
+        //cprintf("[%08x] page fault %x %x\n", curenv->env_id, fault_va, curenv->env_tf.tf_esp);
         env_run(curenv);
     }
 	// Destroy the environment that caused the fault.

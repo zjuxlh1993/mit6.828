@@ -20,8 +20,9 @@ void
 umain(int argc, char **argv)
 {
 	set_pgfault_handler(handler);
-	cprintf("%s\n", (char*)0xDeadBeef);
+	//cprintf("%s\n", (char*)0xFFFFFF00);
+	cprintf("%s\n", (char*)0xdeadbeef);
 	cprintf("%s\n", (char*)0xCafeBffe);
-	//cprintf("%s\n", (char*)0xCafec025);
+	
 	//cprintf("%s\n", (char*)0xCafec022);
 }

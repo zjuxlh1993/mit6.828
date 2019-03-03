@@ -98,7 +98,7 @@ sys_exofork(void)
 	e->env_status = ENV_NOT_RUNNABLE;
 	e->env_tf = curenv->env_tf;
 	e->env_tf.tf_regs.reg_eax = 0;
-	warn("envid=%x",e->env_id);
+	//warn("envid=%x",e->env_id);
 	return e->env_id;
 	//panic("sys_exofork not implemented");
 }
@@ -223,12 +223,15 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	//   check the current permissions on the page.
 
 	// LAB 4: Your code here.
+	//warn("test0 %x %x %x",srcva,dstva,perm);
 	if (!check_user_va(srcva) || !check_user_va(dstva) || !(perm & PTE_U) || !(perm & PTE_P))
 		return -E_INVAL;
+	//warn("test1");
 	struct Env *src, *dst;
 	int ret = envid2env(srcenvid, &src, true) | envid2env(dstenvid, &dst, true);
 	if (ret<0)
 		return ret;
+	//warn("test2");
 	pte_t* cpte;
 	struct PageInfo *pg = page_lookup(src->env_pgdir, srcva, &cpte);
 	if (!pg)
@@ -237,6 +240,7 @@ sys_page_map(envid_t srcenvid, void *srcva,
 		return -E_INVAL; 
 	if ((ret = page_insert(dst->env_pgdir, pg, dstva, perm)))
 		return ret;
+	//warn("test3");
 	return 0;
 	//panic("sys_page_map not implemented");
 }
@@ -329,6 +333,20 @@ sys_ipc_recv(void *dstva)
 	return 0;
 }
 
+static int
+sys_page_set_perm(uint32_t envid, void* va, int perm)
+{
+	//warn("sys_page_set_perm perm:%x",perm);
+	struct Env* e;
+	if (!check_user_va(va))
+		return -E_INVAL;
+	int ret = envid2env(envid, &e, true);
+	if (ret<0)
+		return ret;
+	page_set_perm(e->env_pgdir, va, perm);
+	return 0;
+}
+
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -341,6 +359,8 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	//warn("%d %d",curenv->env_id,syscallno);
 	uint32_t ret = 0;
 	switch (syscallno) {
+	case SYS_page_set_perm:
+		return sys_page_set_perm(a1, (void*)a2, a3);
 	case SYS_cputs:
 		sys_cputs((const char*)a1, a2);
 		break;

@@ -56,10 +56,12 @@ i386_init(void)
 	//ENV_CREATE(user_primes, ENV_TYPE_USER);
 	
 	/* test user page fault handler */
-	ENV_CREATE(user_faultread, ENV_TYPE_USER);
-	ENV_CREATE(user_faultdie, ENV_TYPE_USER);
-	ENV_CREATE(user_faultalloc, ENV_TYPE_USER);
-	ENV_CREATE(user_faultallocbad, ENV_TYPE_USER);
+	//ENV_CREATE(user_faultread, ENV_TYPE_USER);
+	//ENV_CREATE(user_faultdie, ENV_TYPE_USER);
+	//ENV_CREATE(user_faultalloc, ENV_TYPE_USER);
+	//ENV_CREATE(user_faultallocbad, ENV_TYPE_USER);
+	
+	ENV_CREATE(user_forktree, ENV_TYPE_USER);
 	
 	//warn("creat 1st");
 	//ENV_CREATE(user_yield, ENV_TYPE_USER);
