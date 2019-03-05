@@ -81,13 +81,13 @@ duppage(envid_t envid, unsigned pn)
         perm &= ~PTE_W;
         perm |= PTE_COW;
         //cprintf("%x %x %x %x\n",uvpt[pn],uvpd[pn/NPTENTRIES],pn*PGSIZE, perm);
-        if ((r = sys_page_map(0, (void*)(pn*PGSIZE), envid, (void*)(pn*PGSIZE), perm))<0)
+        if ((r = sys_page_map(0, (void*)(pn*PGSIZE), envid, (void*)(pn*PGSIZE), perm&PTE_SYSCALL))<0)
             	return r; 
-        if ((r = sys_page_set_perm(0, (void*)(pn*PGSIZE), perm))<0)
+        if ((r = sys_page_set_perm(0, (void*)(pn*PGSIZE), perm&PTE_SYSCALL))<0)
             	return r;
         //cprintf("%x %x %x\n",uvpt[pn],uvpd[pn/NPTENTRIES],pn*PGSIZE);       
     } else {
-        if ((r = sys_page_map(0, (void*)(pn*PGSIZE), envid, (void*)(pn*PGSIZE), perm))<0)
+        if ((r = sys_page_map(0, (void*)(pn*PGSIZE), envid, (void*)(pn*PGSIZE), perm&PTE_SYSCALL))<0)
             	return r;          
     }
 
@@ -143,7 +143,7 @@ fork(void)
     	}
         r = duppage(envid, i);
         if (r<0){
-            cprintf("%x\n",i*PGSIZE);
+            cprintf("%x\n",r);
             return r;
         }
     }
