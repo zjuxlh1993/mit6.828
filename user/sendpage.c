@@ -13,15 +13,17 @@ void
 umain(int argc, char **argv)
 {
 	envid_t who;
-
+	//cprintf("%x %x\n",str1,str2);
 	if ((who = fork()) == 0) {
 		// Child
 		ipc_recv(&who, TEMP_ADDR_CHILD, 0);
+		// cprintf("test1\n");
 		cprintf("%x got message: %s\n", who, TEMP_ADDR_CHILD);
 		if (strncmp(TEMP_ADDR_CHILD, str1, strlen(str1)) == 0)
 			cprintf("child received correct message\n");
-
+		//cprintf("test2");
 		memcpy(TEMP_ADDR_CHILD, str2, strlen(str2) + 1);
+		//cprintf("test3");
 		ipc_send(who, 0, TEMP_ADDR_CHILD, PTE_P | PTE_W | PTE_U);
 		return;
 	}

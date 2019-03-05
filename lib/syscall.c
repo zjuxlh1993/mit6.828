@@ -58,7 +58,10 @@ sys_env_destroy(envid_t envid)
 envid_t
 sys_getenvid(void)
 {
-	 return syscall(SYS_getenvid, 0, 0, 0, 0, 0, 0);
+	 uint32_t ret;
+	 ret = syscall(SYS_getenvid, 0, 0, 0, 0, 0, 0);
+	 //cprintf("%d\n", ret);
+	 return ret;
 }
 
 void
@@ -115,5 +118,11 @@ int
 sys_ipc_recv(void *dstva)
 {
 	return syscall(SYS_ipc_recv, 1, (uint32_t)dstva, 0, 0, 0, 0);
+}
+
+int
+sys_page_set_perm(envid_t envid, void *va, int perm)
+{
+	return syscall(SYS_page_set_perm, 1, envid, (uint32_t)va, perm, 0, 0);
 }
 
