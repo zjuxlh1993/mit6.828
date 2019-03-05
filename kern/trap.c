@@ -285,6 +285,7 @@ trap_dispatch(struct Trapframe *tf)
 	
 	if (tf->tf_trapno == IRQ_OFFSET+IRQ_TIMER){
 		lapic_eoi();
+		//cprintf("Spurious interrupt on irq 0\n");
 		sched_yield();
 		return;
 	}

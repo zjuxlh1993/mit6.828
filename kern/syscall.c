@@ -314,6 +314,7 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 	// LAB 4: Your code here.
 	int r;
 	struct Env*e = &envs[ENVX(envid)];
+	//warn("[%08x] sys_ipc_try_send",curenv->env_id);
 	if (e->env_status == ENV_FREE || e->env_status == ENV_DYING)
 		return -E_BAD_ENV;
 	if (!e->env_ipc_recving)
@@ -330,6 +331,7 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 		if ((r=page_insert(e->env_pgdir, pg, e->env_ipc_dstva, perm))<0)
 			return r;
 	}
+	//warn("[%08x] sys_ipc_try_send value:%x to [%08x]",curenv->env_id, value, envid);
 	e->env_ipc_recving = 0;
 	e->env_ipc_from = curenv->env_id;
 	e->env_ipc_value = value;
@@ -355,6 +357,7 @@ sys_ipc_recv(void *dstva)
 {
 	// LAB 4: Your code here.
 	//panic("sys_ipc_recv not implemented");
+	
 	curenv->env_ipc_recving = true;
 	if ((uint32_t)dstva<UTOP){
 		if ((uint32_t)dstva % PGSIZE!=0)
@@ -362,6 +365,8 @@ sys_ipc_recv(void *dstva)
 		curenv->env_ipc_dstva = dstva;
 	}
 	curenv->env_status = ENV_NOT_RUNNABLE;
+	curenv->env_tf.tf_regs.reg_eax = 0;
+	//warn("[%08x] sys_ipc_recv:%x",curenv->env_id, dstva);
 	sched_yield();
 	return 0;
 }

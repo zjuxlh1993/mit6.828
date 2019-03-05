@@ -55,7 +55,7 @@ ipc_send(envid_t to_env, uint32_t val, void *pg, int perm)
 {
 	// LAB 4: Your code here.
 	int r=-1;
-	while (r==0){
+	while (r!=0){
 		if (!pg)
 			r = sys_ipc_try_send(to_env, val, (void*)0xffffffff, perm);
 		else 

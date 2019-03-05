@@ -38,7 +38,7 @@ sched_yield(void)
 	//warn("test %d",envs[NENV-1].env_status);
 	for (uint32_t i = (env_id + 1)%NENV; i!=env_id; i = (i+1)%NENV){
 		if (envs[i].env_status == ENV_RUNNABLE){
-			if (curenv)
+			if (curenv && curenv->env_status == ENV_RUNNING)
 				curenv->env_status = ENV_RUNNABLE;
 			curenv = &envs[i];
 			curenv->env_status = ENV_RUNNING;
@@ -47,7 +47,7 @@ sched_yield(void)
 			env_run(curenv);
 		}
 	}
-	//warn("%x id request sched %x", env_id, env_id);
+	// warn("%x id request sched %x", env_id, env_id);
 	if (curenv && curenv->env_status == ENV_RUNNING){
 		//warn("cpu %d choose %x",cpunum(),curenv->env_id);
 		//warn("ENV_RUNNING env0:%d env1:%d env:%d",envs[0].env_status,envs[1].env_status,envs[2].env_status);
