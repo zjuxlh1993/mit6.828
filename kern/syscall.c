@@ -236,7 +236,7 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	//   check the current permissions on the page.
 
 	// LAB 4: Your code here.
-	//warn("test0 %x %x %x",srcva,dstva,perm);
+	warn("test0 %x %x %x",srcva,dstva,perm);
 	if (!check_user_va(srcva) || !check_user_va(dstva) || !check_user_perm(perm))
 		return -E_INVAL;
 	//warn("test1");

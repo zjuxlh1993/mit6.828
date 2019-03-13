@@ -48,8 +48,8 @@ bc_pgfault(struct UTrapframe *utf)
 	// the disk.
 	//
 	// LAB 5: you code here:
-
-    if (sys_page_alloc(thisenv, ROUNDDOWN(addr, PGSIZE), PTE_P | PTE_W | PTE_U)<0)
+	addr = ROUNDDOWN(addr, PGSIZE);
+    if (sys_page_alloc(0, addr, PTE_P | PTE_W | PTE_U)<0)
         panic("not enought memory!");
 
     uint32_t secno = blockno * BLKSECTS;
@@ -77,19 +77,21 @@ bc_pgfault(struct UTrapframe *utf)
 void
 flush_block(void *addr)
 {
+	int r;
 	uint32_t blockno = ((uint32_t)addr - DISKMAP) / BLKSIZE;
 
 	if (addr < (void*)DISKMAP || addr >= (void*)(DISKMAP + DISKSIZE))
 		panic("flush_block of bad va %08x", addr);
 
 	// LAB 5: Your code here.
-    if (!va_is_mapped(addr) || !va_is_dirty(addr))
-        return;
+	addr = ROUNDDOWN(addr, PGSIZE);
+    	if (!va_is_mapped(addr) || !va_is_dirty(addr))
+        	return;
 
-    uint32_t secno = blockno * BLKSECTS;
-    ide_write(secno, ROUNDDOWN(addr, PGSIZE), BLKSECTS);
+    	uint32_t secno = blockno * BLKSECTS;
+   	ide_write(secno, ROUNDDOWN(addr, PGSIZE), BLKSECTS);
 
-    if ((r = sys_page_map(0, addr, 0, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL)) < 0)
+   	if ((r = sys_page_map(0, addr, 0, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL)) < 0)
 		panic("in bc_pgfault, sys_page_map: %e", r);
 	// panic("flush_block not implemented");
 }
