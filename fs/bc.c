@@ -32,7 +32,7 @@ bc_pgfault(struct UTrapframe *utf)
 	void *addr = (void *) utf->utf_fault_va;
 	uint32_t blockno = ((uint32_t)addr - DISKMAP) / BLKSIZE;
 	int r;
-
+	// cprintf("bc_pgfault blockno%d\n", blockno);
 	// Check that the fault was within the block cache region
 	if (addr < (void*)DISKMAP || addr >= (void*)(DISKMAP + DISKSIZE))
 		panic("page fault in FS: eip %08x, va %08x, err %04x",
@@ -49,11 +49,11 @@ bc_pgfault(struct UTrapframe *utf)
 	//
 	// LAB 5: you code here:
 	addr = ROUNDDOWN(addr, PGSIZE);
-    if (sys_page_alloc(0, addr, PTE_P | PTE_W | PTE_U)<0)
-        panic("not enought memory!");
+    	if (sys_page_alloc(0, addr, PTE_P | PTE_W | PTE_U)<0)
+        	panic("not enought memory!");
 
-    uint32_t secno = blockno * BLKSECTS;
-    ide_read(secno, ROUNDDOWN(addr, PGSIZE), BLKSECTS);
+    	uint32_t secno = blockno * BLKSECTS;
+    	ide_read(secno, ROUNDDOWN(addr, PGSIZE), BLKSECTS);
 
 	// Clear the dirty bit for the disk block page since we just read the
 	// block from disk

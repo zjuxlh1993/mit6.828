@@ -214,16 +214,18 @@ serve_read(envid_t envid, union Fsipc *ipc)
 		cprintf("serve_read %08x %08x %08x\n", envid, req->req_fileid, req->req_n);
 	
 	// Lab 5: Your code here:
-    int r;
-    struct OpenFile* o;
+    	int r;
+   	struct OpenFile* o;
+    	if ((r = openfile_lookup(envid, req->req_fileid, &o)) < 0)
+		return r;
 	int fileid = ipc->read.req_fileid;
-    int bytes = ipc->read.req_n;
-    o = &opentab[fileid % MAXOPEN];
-    r = file_read(o->o_file, ret->ret_buf, bytes, o->o_fd->fd_offset);
-    if (r<0)
-        return r;
-    o->o_fd->fd_offset += r;
-    return r;
+    	int bytes = ipc->read.req_n;
+    	o = &opentab[fileid % MAXOPEN];
+    	r = file_read(o->o_file, ret->ret_buf, bytes, o->o_fd->fd_offset);
+    	if (r<0)
+        	return r;
+   	o->o_fd->fd_offset += r;
+    	return r;
 }
 
 
@@ -238,6 +240,20 @@ serve_write(envid_t envid, struct Fsreq_write *req)
 		cprintf("serve_write %08x %08x %08x\n", envid, req->req_fileid, req->req_n);
 
 	// LAB 5: Your code here.
+    	int r;
+   	struct OpenFile* o;
+    	if ((r = openfile_lookup(envid, req->req_fileid, &o)) < 0)
+		return r;
+	int fileid = req->req_fileid;
+    	int bytes = req->req_n;
+    	o = &opentab[fileid % MAXOPEN];
+    	//cprintf("file_write in\n");
+    	r = file_write(o->o_file, req->req_buf, bytes, o->o_fd->fd_offset);
+    	//cprintf("file_write return %d\n", r);
+    	if (r<0)
+        	return r;
+   	o->o_fd->fd_offset += r;
+    	return r;
 	panic("serve_write not implemented");
 }
 
