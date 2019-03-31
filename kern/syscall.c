@@ -147,7 +147,14 @@ sys_env_set_trapframe(envid_t envid, struct Trapframe *tf)
 	}
 	if (envs[ENVX(envid)].env_status == ENV_FREE || envs[ENVX(envid)].env_status == ENV_DYING)
 		return -E_BAD_ENV;
-	envs[ENVX(envid)].env_tf = *tf;	
+    struct Env* e = &envs[ENVX(envid)];
+	e->env_tf = *tf;	
+    e->env_tf.tf_eflags |= FL_IF;
+    e->env_tf.tf_eflags &= ~FL_IOPL_MASK;
+    e->env_tf.tf_ds = GD_UD | 3;
+	e->env_tf.tf_es = GD_UD | 3;
+	e->env_tf.tf_ss = GD_UD | 3;
+	e->env_tf.tf_cs = GD_UT | 3;
 	return 0;
 	panic("sys_env_set_trapframe not implemented");
 }
