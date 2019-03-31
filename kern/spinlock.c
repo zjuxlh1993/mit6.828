@@ -63,6 +63,7 @@ spin_lock(struct spinlock *lk)
 #ifdef DEBUG_SPINLOCK
 	if (holding(lk))
 		panic("CPU %d cannot acquire %s: already holding", cpunum(), lk->name);
+	//warn("CPU %d try to acquire %s", cpunum(), lk->name);
 #endif
 
 	// The xchg is atomic.
@@ -75,6 +76,7 @@ spin_lock(struct spinlock *lk)
 #ifdef DEBUG_SPINLOCK
 	lk->cpu = thiscpu;
 	get_caller_pcs(lk->pcs);
+	//warn("CPU %d acquire %s", cpunum(), lk->name);
 #endif
 }
 
@@ -83,6 +85,7 @@ void
 spin_unlock(struct spinlock *lk)
 {
 #ifdef DEBUG_SPINLOCK
+	//warn("CPU %d try to release %s", cpunum(), lk->name);
 	if (!holding(lk)) {
 		int i;
 		uint32_t pcs[10];

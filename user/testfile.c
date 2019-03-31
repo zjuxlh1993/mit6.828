@@ -70,7 +70,7 @@ umain(int argc, char **argv)
 	// Try writing
 	if ((r = xopen("/new-file", O_RDWR|O_CREAT)) < 0)
 		panic("serve_open /new-file: %e", r);
-
+	cprintf("write %d\n", strlen(msg));
 	if ((r = devfile.dev_write(FVA, msg, strlen(msg))) != strlen(msg))
 		panic("file_write: %e", r);
 	cprintf("file_write is good\n");
@@ -99,6 +99,7 @@ umain(int argc, char **argv)
 	cprintf("open is good\n");
 
 	// Try files with indirect blocks
+	cprintf("Try files with indirect blocks\n");
 	if ((f = open("/big", O_WRONLY|O_CREAT)) < 0)
 		panic("creat /big: %e", f);
 	memset(buf, 0, sizeof(buf));
@@ -108,7 +109,7 @@ umain(int argc, char **argv)
 			panic("write /big@%d: %e", i, r);
 	}
 	close(f);
-
+	cprintf("write big file is good\n");
 	if ((f = open("/big", O_RDONLY)) < 0)
 		panic("open /big: %e", f);
 	for (i = 0; i < (NDIRECT*3)*BLKSIZE; i += sizeof(buf)) {

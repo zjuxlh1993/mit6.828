@@ -66,6 +66,19 @@ _pgfault_upcall:
 	//
 	// LAB 4: Your code here.
 
+    movl 0x28(%esp),%eax
+    subl $0x4,0x30(%esp)
+    movl 0x30(%esp),%ebx
+    movl %eax,(%ebx)
+    addl $0x8,%esp
+    popal
+    addl $0x4,%esp
+    popfl
+    popl %esp
+    
+
+
+
 	// Restore the trap-time registers.  After you do this, you
 	// can no longer modify any general-purpose registers.
 	// LAB 4: Your code here.
@@ -80,3 +93,4 @@ _pgfault_upcall:
 
 	// Return to re-execute the instruction that faulted.
 	// LAB 4: Your code here.
+    ret

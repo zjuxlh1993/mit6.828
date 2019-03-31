@@ -6,14 +6,17 @@
 #include <inc/memlayout.h>
 #include <inc/assert.h>
 #include <inc/x86.h>
+#include <inc/mmu.h>
 
 #include <kern/console.h>
 #include <kern/monitor.h>
 #include <kern/kdebug.h>
 #include <kern/trap.h>
+#include <kern/env.h>
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
+static bool mon_si_set_tf = false;
 
 struct Command {
 	const char *name;
@@ -25,9 +28,22 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+	{ "backtrace", "Display information about stack", mon_backtrace},
+	{ "si", "user mode single step debug", mon_si},
 };
 
 /***** Implementations of basic kernel monitor commands *****/
+
+int 
+mon_si(int argc, char **argv, struct Trapframe *tf)
+{
+	int i;
+	cprintf("[%08x] env debug\n", curenv->env_id);
+	curenv->env_tf.tf_eflags |= FL_TF;
+	mon_si_set_tf = true;
+	env_run(curenv);
+	return 0;
+}
 
 int
 mon_help(int argc, char **argv, struct Trapframe *tf)
@@ -58,6 +74,19 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
+	cprintf("Stack backtrace:\n");
+	uint32_t ebp = read_ebp();
+	uint32_t eip = *(uint32_t*)(ebp+4);
+	struct Eipdebuginfo info;
+	while (ebp){
+		cprintf("ebp %08x  eip %08x  args %08x %08x %08x %08x %08x\n", ebp, eip, 
+			*(uint32_t*)(ebp+8), *(uint32_t*)(ebp+12), *(uint32_t*)(ebp+16), *(uint32_t*)(ebp+20), *(uint32_t*)(ebp+24));
+		if (debuginfo_eip(eip, &info)!=-1){
+			cprintf("%s:%d: %.*s+%d\n", info.eip_file, info.eip_line, info.eip_fn_namelen, info.eip_fn_name, eip-info.eip_fn_addr);
+		ebp = *(uint32_t*)(ebp);
+		eip = *(uint32_t*)(ebp+4);
+		}
+	}
 	// Your code here.
 	return 0;
 }
@@ -115,7 +144,8 @@ monitor(struct Trapframe *tf)
 
 	cprintf("Welcome to the JOS kernel monitor!\n");
 	cprintf("Type 'help' for a list of commands.\n");
-
+	mon_si_set_tf = false;
+	
 	if (tf != NULL)
 		print_trapframe(tf);
 

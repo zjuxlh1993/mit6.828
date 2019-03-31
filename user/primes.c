@@ -30,6 +30,7 @@ top:
 	// filter out multiples of our prime
 	while (1) {
 		i = ipc_recv(&envid, 0, 0);
+		//cprintf("[%08x] rec %d %d\n",thisenv->env_id, i, p);
 		if (i % p)
 			ipc_send(id, i, 0, 0);
 	}
