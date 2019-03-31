@@ -26,7 +26,7 @@ pgfault(struct UTrapframe *utf)
 
 	// LAB 4: Your code here.
     	//cprintf("fault %x\n",addr);
-    	//cprintf("[%08x] fault %x\n", thisenv->env_id, addr);
+    	//cprintf("[%08x] fault %x\n", thisenv->env_id, uvpt[PGNUM(addr)]);
     	pte_t* user_pgdir = (pte_t*)UVPT;
     	pte_t pte = user_pgdir[PGNUM(addr)];
     	//cprintf("enter pgfalut %x\n",pte);
@@ -77,6 +77,10 @@ duppage(envid_t envid, unsigned pn)
     
     if (!(perm & PTE_P)|| !(perm & PTE_U))
         return 0;
+    if (perm & PTE_SHARE){
+         r = sys_page_map(0, (void*)(pn*PGSIZE), envid, (void*)(pn*PGSIZE), perm&PTE_SYSCALL);
+         return r;    	
+    }
     if ((perm & PTE_W) || (perm & PTE_COW)){
         perm &= ~PTE_W;
         perm |= PTE_COW;
