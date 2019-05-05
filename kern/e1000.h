@@ -4,9 +4,11 @@
 #define E1000VendorID 0x8086
 #define E1000DeviceID 0x100E
 
+#define E1000StatusOffset 0x08
+
 #include <kern/pci.h>
 
-void* e1000_mmio_start;
+volatile void* e1000_mmio_start;
 int E1000_attach (struct pci_func *pcif);
 
 struct MainDeviceDescription
