@@ -6,6 +6,15 @@
 
 #include <kern/pci.h>
 
+void* e1000_mmio_start;
 int E1000_attach (struct pci_func *pcif);
+
+struct MainDeviceDescription
+{
+    /* data */
+    uint64_t device_control_register;
+    uint64_t device_status_register;
+};
+
 
 #endif  // SOL >= 6
