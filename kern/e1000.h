@@ -5,6 +5,10 @@
 #define E1000DeviceID 0x100E
 
 #define E1000StatusOffset 0x08
+#define E1000TDLENOffset 0x3808
+#define E1000TDBALOffset 0x3800
+#define E1000TDBAHOffset 0x3804
+
 #define TRANSMIT_DES_LIST_NUMBER 64
 
 #include <kern/pci.h>

@@ -5,16 +5,16 @@
 
 // LAB 6: Your driver code here
 
-#define E1000OFFSET(offset)
+#define E1000Set(offset,value) *((uint32_t*)((uint32_t)(e1000_mmio_start)+(offset)))=(uint32_t)value
+
+uint32_t transmit_list_head;
+uint32_t transmit_list_tail;
+
+int e1000_transmit_init();
 
 int E1000_attach (struct pci_func *pcif)
 { 
     int r;
-
-    struct PageInfo *pg = page_alloc(ALLOC_ZERO);
-	if (!pg)
-		return -E_NO_MEM;
-
     pci_func_enable(pcif);
     e1000_mmio_start = mmio_map_region(pcif->reg_base[0], PGSIZE);
     struct MainDeviceDescription* des = (struct MainDeviceDescription*)e1000_mmio_start;
@@ -29,5 +29,8 @@ int E1000_attach (struct pci_func *pcif)
 
 int e1000_transmit_init()
 {
-
+    E1000Set(E1000TDBALOffset, PADDR((void*)e1000_mmio_start));
+    E1000Set(E1000TDBAHOffset, 0x0);
+    E1000Set(E1000TDLENOffset,TRANSMIT_DES_LIST_NUMBER);
+    return 0;
 }
