@@ -6,6 +6,7 @@
 // LAB 6: Your driver code here
 
 #define E1000Set(offset,value) *((uint32_t*)((uint32_t)(e1000_mmio_start)+(offset)))=(uint32_t)value
+#define E1000Get(offset) *((uint32_t*)((uint32_t)(e1000_mmio_start)+(offset)))
 
 uint32_t transmit_list_head;
 uint32_t transmit_list_tail;
@@ -31,6 +32,17 @@ int e1000_transmit_init()
 {
     E1000Set(E1000TDBALOffset, PADDR((void*)e1000_mmio_start));
     E1000Set(E1000TDBAHOffset, 0x0);
+    //make sure TDT & TDH are 0
+    E1000Set(E1000TDHOffset, 0x0);
+    E1000Set(E1000TDTOffset, 0x0);
+
+    //initialize the transmit contorl register
+    E1000Set(E1000TCTLOffset, E1000Get(E1000TCTLOffset)|(~TCTL_EN));
+    E1000Set(E1000TCTLOffset, E1000Get(E1000TCTLOffset)|(~TCTL_PSP));
+    E1000Set(E1000TCTLOffset, E1000Get(E1000TCTLOffset)&(~TCTL_CT)|TCTL_CT_ETH);
+    E1000Set(E1000TCTLOffset, E1000Get(E1000TCTLOffset)&(~TCTL_COLD)|TCTL_COLD_1000_FULL_DUPLEX);
+    //set transmit ipg
+    E1000Set(E1000TIPGOffset, TIPG_IPGR1_8023 | TIPG_IPGR2_8023 | TIPG_IPGT_8023);
     E1000Set(E1000TDLENOffset,TRANSMIT_DES_LIST_NUMBER);
     return 0;
 }
